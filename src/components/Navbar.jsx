@@ -14,13 +14,12 @@ import Typography from '@mui/material/Typography';
 import Button from '@mui/material/Button';
 import { Link } from 'react-router-dom';
 import { useState } from 'react';
+
 const drawerWidth = 240;
-const navItems = ['Log in', 'Sign up'];
 
 export default function Navbar(props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
-
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
@@ -32,13 +31,16 @@ export default function Navbar(props) {
       </Typography>
       <Divider />
       <List>
-        {navItems.map((item) => (
-          <ListItem key={item} disablePadding>
-            <ListItemButton sx={{ textAlign: 'center' }}>
-              <ListItemText primary={item} />
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/login" sx={{ textAlign: 'center' }}>
+              <ListItemText primary="Log in" />
             </ListItemButton>
           </ListItem>
-        ))}
+          <ListItem disablePadding>
+            <ListItemButton component={Link} to="/signup" sx={{ textAlign: 'center' }}>
+              <ListItemText primary="Sign up" />
+            </ListItemButton>
+          </ListItem>
       </List>
     </Box>
   );
@@ -68,11 +70,6 @@ export default function Navbar(props) {
             MoneyMate
           </Typography>
           <Box sx={{ display: { xs: 'none', sm: 'block' } }}>
-            {/* {navItems.map((item) => (
-              <Button component={Link} to='/login' key={item} sx={{ color: '#fff' }}>
-                {item}
-              </Button>
-            ))} */}
               <Button component={Link} to='/login' sx={{ color: '#fff' }}>
                 Log in
               </Button>
