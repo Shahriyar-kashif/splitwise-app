@@ -1,9 +1,32 @@
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import './index.css';
-
-ReactDOM.createRoot(document.getElementById('root')).render(
+import React from "react";
+import ReactDOM from "react-dom/client";
+import "./index.css";
+import { createBrowserRouter, RouterProvider } from "react-router-dom";
+import Root from "./routes/Root";
+import Signin from './components/Signin';
+import { ThemeProvider } from "@emotion/react";
+import { theme } from "./themes/theme";
+import Signup from "./components/Signup";
+const router = createBrowserRouter([
+  {
+    path:"/",
+    element: <Root />,
+    children:[
+      {
+        path:'/login',
+        element:<Signin />,
+      },
+      {
+        path:'/signup',
+        element:<Signup />
+      }
+    ]
+  }
+])
+ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-      <h1>Hello World</h1>
+    <ThemeProvider theme={theme}>
+    <RouterProvider router={router}/>
+    </ThemeProvider>
   </React.StrictMode>
-)
+);
