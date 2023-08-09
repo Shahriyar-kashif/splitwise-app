@@ -1,9 +1,9 @@
 import { Typography } from "@mui/material";
 
-export default function Signup() {
+export default function SigninForm() {
     return (
         <Typography variant="h2" mt={10}>
-            Signup
+            Log in
         </Typography>
     )
 }
