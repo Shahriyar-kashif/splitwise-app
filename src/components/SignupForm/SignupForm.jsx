@@ -15,7 +15,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 
 export default function SignupForm() {
-  const [error, setError] = useState(null);
+  const [submissionError, setSubmissionError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -27,11 +27,11 @@ export default function SignupForm() {
       .then((userCredentials) => {
         const user = userCredentials.user;
         console.log(user);
-        if (error) setError(null);
+        if (submissionError) setSubmissionError(null);
         navigate(`/user/${user.uid}`);
       })
       .catch((error) => {
-        setError(error.message);
+        setSubmissionError(error.message);
       });
   };
   return (
@@ -100,12 +100,12 @@ export default function SignupForm() {
           >
             Sign up
           </Button>
-          {error && (
+          {submissionError && (
             <Typography
               component="p"
               sx={{ color: "red", textAlign: "center" }}
             >
-              {error}
+              {submissionError}
             </Typography>
           )}
           <Grid container justifyContent="flex-end">
