@@ -24,6 +24,7 @@ export default function SignupForm() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email");
     const password = formData.get("password");
+    const [firstName, lastName] = [formData.get('firstName'), formData.get('lastName')];
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
         const user = userCredentials.user;
@@ -31,6 +32,8 @@ export default function SignupForm() {
         if (submissionError) setSubmissionError(null);
         setDoc(doc(db, "users-db", user.uid), {
           email: user.email,
+          firstName: firstName,
+          lastName: lastName,
         });
         navigate(`/user/${user.uid}`);
       })
