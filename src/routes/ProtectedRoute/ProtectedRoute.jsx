@@ -1,27 +1,25 @@
-import { Navigate, Outlet } from "react-router-dom";
-import { authSelector } from "../../store/authSlice";
+import { Outlet, useNavigate } from "react-router-dom";
 import { authorizeUser } from "../../store/authSlice";
 import { useEffect } from "react";
 import { onAuthStateChanged } from "firebase/auth";
 import { auth } from "../../firebase/firebase";
-import { useDispatch, useSelector } from "react-redux";
+import { useDispatch } from "react-redux";
 
 export default function ProtectedRoute() {
   const dispatch = useDispatch();
-  const userAuth = useSelector(authSelector);
-  console.log(userAuth)
+  const navigate = useNavigate();
+
   useEffect(() => {
     onAuthStateChanged(auth, (user) => {
       if (user) {
-        console.log(user);
-        dispatch(authorizeUser({
-            id:user.uid,
-            firstName: user.firstName,
-            lastName: user.lastName,
-        }));
+        dispatch(authorizeUser({id:user.uid}));
+      } else{
+        navigate('/login');
       }
     });
-  }, [auth]);
+  }, []);
 
-  return <>{userAuth ? <Outlet /> : <Navigate to="/login" />}</>;
+    return (
+        <Outlet />
+    )
 }
