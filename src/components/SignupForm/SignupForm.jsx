@@ -28,7 +28,7 @@ export default function SignupForm() {
         const user = userCredentials.user;
         console.log(user);
         if (error) setError(null);
-        navigate("/login");
+        navigate(`/user/${user.uid}`);
       })
       .catch((error) => {
         setError(error.message);

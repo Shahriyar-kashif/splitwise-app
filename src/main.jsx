@@ -8,6 +8,10 @@ import { theme } from "./themes/theme";
 import Home from "./routes/Home/Home";
 import Signup from "./routes/Signup/Signup";
 import Signin from "./routes/Signin/Signin";
+import User from "./routes/User/User";
+import ProtectedRoute from "./routes/ProtectedRoute/ProtectedRoute";
+import { Provider } from "react-redux";
+import { store } from "./store/store";
 
 const router = createBrowserRouter([
   {
@@ -17,6 +21,16 @@ const router = createBrowserRouter([
       {
         path: "/",
         element: <Home />,
+      },
+      {
+        path:"/",
+        element: <ProtectedRoute />,
+        children: [
+          {
+            path: "/user/:userId",
+            element: <User />,
+          },
+        ]
       },
       {
         path: "/login",
@@ -31,8 +45,10 @@ const router = createBrowserRouter([
 ]);
 ReactDOM.createRoot(document.getElementById("root")).render(
   <React.StrictMode>
-    <ThemeProvider theme={theme}>
-      <RouterProvider router={router} />
-    </ThemeProvider>
+    <Provider store={store}>
+      <ThemeProvider theme={theme}>
+        <RouterProvider router={router} />
+      </ThemeProvider>
+    </Provider>
   </React.StrictMode>
 );
