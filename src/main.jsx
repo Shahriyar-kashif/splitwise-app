@@ -7,11 +7,16 @@ import Signin from './components/Signin';
 import { ThemeProvider } from "@emotion/react";
 import { theme } from "./themes/theme";
 import Signup from "./components/Signup";
+import Home from "./routes/Home";
 const router = createBrowserRouter([
   {
     path:"/",
     element: <Root />,
     children:[
+      {
+        path:'/',
+        element:<Home />,
+      },
       {
         path:'/login',
         element:<Signin />,
