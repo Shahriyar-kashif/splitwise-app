@@ -9,10 +9,11 @@ import {
   Link,
 } from "@mui/material";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase/firebase";
+import { auth, db } from "../../firebase/firebase";
 import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function SignupForm() {
   const [submissionError, setSubmissionError] = useState(null);
@@ -28,6 +29,9 @@ export default function SignupForm() {
         const user = userCredentials.user;
         console.log(user);
         if (submissionError) setSubmissionError(null);
+        setDoc(doc(db, "users-db", user.uid), {
+          email: user.email,
+        });
         navigate(`/user/${user.uid}`);
       })
       .catch((error) => {
