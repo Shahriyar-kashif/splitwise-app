@@ -12,6 +12,10 @@ import User from "./routes/User/User";
 import ProtectedRoute from "./routes/ProtectedRoute/ProtectedRoute";
 import { Provider } from "react-redux";
 import { store } from "./store/store";
+import Dashboard from "./routes/Dashboard/Dashboard";
+import AddExpense from "./routes/AddExpense/AddExpense";
+import { loader } from "./components/UserProfile/UserProfile";
+import {loader as contributorsLoader} from './components/AddFriend/AddContributers';
 
 const router = createBrowserRouter([
   {
@@ -29,6 +33,18 @@ const router = createBrowserRouter([
           {
             path: "/user/:userId",
             element: <User />,
+            children:[
+              {
+                path:"/user/:userId",
+                element:<Dashboard />,
+                loader: loader,
+              },
+              {
+                path:"add-expense",
+                element: <AddExpense />,
+                loader: contributorsLoader,
+              }
+            ]
           },
         ]
       },
