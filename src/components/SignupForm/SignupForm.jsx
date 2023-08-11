@@ -9,13 +9,14 @@ import {
   Link,
 } from "@mui/material";
 import { createUserWithEmailAndPassword } from "firebase/auth";
-import { auth } from "../../firebase/firebase";
+import { auth, db } from "../../firebase/firebase";
 import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
+import { doc, setDoc } from "firebase/firestore";
 
 export default function SignupForm() {
-  const [error, setError] = useState(null);
+  const [submissionError, setSubmissionError] = useState(null);
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -23,15 +24,21 @@ export default function SignupForm() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email");
     const password = formData.get("password");
+    const [firstName, lastName] = [formData.get('firstName'), formData.get('lastName')];
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
         const user = userCredentials.user;
         console.log(user);
-        if (error) setError(null);
+        if (submissionError) setSubmissionError(null);
+        setDoc(doc(db, "users-db", user.uid), {
+          email: user.email,
+          firstName: firstName,
+          lastName: lastName,
+        });
         navigate(`/user/${user.uid}`);
       })
       .catch((error) => {
-        setError(error.message);
+        setSubmissionError(error.message);
       });
   };
   return (
@@ -100,12 +107,12 @@ export default function SignupForm() {
           >
             Sign up
           </Button>
-          {error && (
+          {submissionError && (
             <Typography
               component="p"
               sx={{ color: "red", textAlign: "center" }}
             >
-              {error}
+              {submissionError}
             </Typography>
           )}
           <Grid container justifyContent="flex-end">
