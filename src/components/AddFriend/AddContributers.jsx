@@ -10,9 +10,9 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import { addDoc, collection, getDocs, query, where } from "@firebase/firestore";
-import { useLoaderData, useParams } from "react-router";
-import { useRef, useState } from "react";
+import { collection, getDocs, query, where } from "@firebase/firestore";
+import { useLoaderData } from "react-router";
+import { useState } from "react";
 import { db } from "../../firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -43,41 +43,94 @@ const style = {
   p: 4,
 };
 
-export default function AddContributers({ open, setClose }) {
+export default function AddContributers({ open, setClose, totalBill }) {
   const users = useLoaderData();
   const [email, setEmail] = useState("");
+  const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
+  const [amountError, setAmountError] = useState("");
   const dispatch = useDispatch();
   const participants = useSelector(participantsSelector);
-  //   const currentUserParam = useParams();
-  console.log(participants);
 
   const handleChange = (event) => {
     console.log(event.target.value);
     setEmail(event.target.value);
   };
 
+  const checkParticipantRepetition = (participants, email) => {
+    const repeatedParticipant = participants.find(
+      (participant) => participant.email === email
+    );
+    return repeatedParticipant;
+  };
+
+  const compareBillAndContribution = (
+    participants,
+    participantBill,
+    participantContribution
+  ) => {
+    const participantPayment = compareAmount(participants) || {
+      bill: 0,
+      contribution: 0,
+    };
+    return (
+      participantPayment.bill + participantBill > totalBill ||
+      participantPayment.contribution + participantContribution > totalBill ||
+      participantContribution > totalBill ||
+      participantBill > totalBill
+    );
+  };
+
+  const compareAmount = (participants) => {
+    if (participants.length > 0) {
+      console.log("working?");
+      const totalBill = participants.reduce((accum, current) => {
+        return {
+          bill: Number(accum.bill) + Number(current.bill),
+          contribution:
+            Number(accum.contribution) + Number(current.contribution),
+        };
+      });
+      console.log(totalBill);
+      return totalBill;
+    }
+  };
+
   const handleParticipants = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const userEmail = formData.get("contributors");
+    const [userEmail, userBill, userContribution] = [
+      formData.get("contributors"),
+      Number(formData.get("bill")),
+      Number(formData.get("contribution")),
+    ];
     const usersRef = collection(db, "users-db");
     const matchedUser = query(usersRef, where("email", "==", userEmail));
     const userSnapShot = await getDocs(matchedUser);
-    // console.log(useSnapShot.docs[0]);
+
+    if (checkParticipantRepetition(participants, userEmail)) {
+      setErrorMessage(true);
+      return;
+    } else setErrorMessage(false);
+
+    if (compareBillAndContribution(participants, userBill, userContribution)) {
+      setAmountError(true);
+      return;
+    } else setAmountError(false);
+
     if (!userSnapShot.empty) {
       const userDoc = userSnapShot.docs[0];
       const participantExpense = {
         id: userDoc.id,
-        contribution: formData.get("contribution"),
-        bill: formData.get("bill"),
+        contribution: userContribution,
+        bill: userBill,
+        email: userEmail,
       };
       dispatch(addParticipants(participantExpense));
       setCurrentParticipant(userEmail);
     }
   };
 
-  console.log(users);
   return (
     <Modal open={open}>
       <Container component="main" maxwidth="xs" sx={style}>
@@ -96,7 +149,6 @@ export default function AddContributers({ open, setClose }) {
               id="contributors"
               name="contributors"
               value={email}
-              //   input={<OutlinedInput label="Search by Email" />}
               MenuProps={MenuProps}
               onChange={handleChange}
               sx={{ width: "100%" }}
@@ -146,8 +198,18 @@ export default function AddContributers({ open, setClose }) {
               Close
             </Button>
             {currentParticipant && (
-              <Typography component="p" sx={{color:'green'}}>
+              <Typography component="p" sx={{ color: "green" }}>
                 {currentParticipant} added successfully!
+              </Typography>
+            )}
+            {errorMessage && (
+              <Typography component="p" sx={{ color: "red" }}>
+                {currentParticipant} has already been added!
+              </Typography>
+            )}
+            {amountError && (
+              <Typography component="p" sx={{ color: "red" }}>
+                Contribution or bill cannot exceed total bill
               </Typography>
             )}
           </Box>

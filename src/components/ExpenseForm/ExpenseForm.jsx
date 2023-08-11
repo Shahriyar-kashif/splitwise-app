@@ -1,3 +1,5 @@
+import AddContributers from "../AddFriend/AddContributers";
+import ContributorsTable from "../ContributorsTable/ContributorsTable";
 import {
   Box,
   Button,
@@ -5,9 +7,14 @@ import {
   Select,
   TextField,
   MenuItem,
+  Input,
 } from "@mui/material";
-import { useState } from "react";
-import AddContributers from "../AddFriend/AddContributers";
+import { useEffect, useRef, useState } from "react";
+import { useDispatch, useSelector } from "react-redux";
+import {
+  clearParticpants,
+  participantsSelector,
+} from "../../store/participantsSlice";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -19,6 +26,7 @@ const MenuProps = {
     },
   },
 };
+
 const currencies = [
   "USD",
   "EUR",
@@ -36,6 +44,16 @@ export default function ExpenseForm() {
   const [openModal, setOpenModal] = useState(false);
   const [disable, setDisable] = useState(true);
   const [currency, setCurrency] = useState("");
+  const participants = useSelector(participantsSelector);
+  const totalBillRef = useRef();
+  const dispatch = useDispatch();
+
+  useEffect(() => {
+    return () => {
+      dispatch(clearParticpants());
+    };
+  }, []);
+
   const handleOpen = () => {
     setOpenModal(true);
   };
@@ -50,19 +68,39 @@ export default function ExpenseForm() {
       setDisable(true);
     }
   };
+
   const handleCurrency = (event) => {
     console.log(event.target.value);
     setCurrency(event.target.value);
   };
+
   return (
-    <Box sx={{ width: "50%", ml: "auto", mr: "auto", mt: 10 }}>
+    <Box sx={{ width: "50%", ml: "auto", mr: "auto" }}>
       <Box component="form" sx={{ mt: 3 }}>
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="description"
+          label="Add Expense Description"
+          type="string"
+          name="description"
+          autoComplete="current-description"
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="date"
+          type="date"
+          name="date"
+          autoComplete="current-date"
+        />
         <InputLabel id="select-currency">Select Currency</InputLabel>
         <Select
           labelId="select-currency"
           id="currency"
           value={currency}
-          //   input={<OutlinedInput label="Select Currency" />}
           MenuProps={MenuProps}
           onChange={handleCurrency}
           sx={{ width: "100%" }}
@@ -78,6 +116,7 @@ export default function ExpenseForm() {
         <TextField
           margin="normal"
           required
+          inputRef={totalBillRef}
           fullWidth
           id="total-amount"
           label="Total Amount"
@@ -90,8 +129,20 @@ export default function ExpenseForm() {
           Add Contributors
         </Button>
         {openModal && (
-          <AddContributers setClose={handleClose} open={openModal} />
+          <AddContributers
+            totalBill={totalBillRef.current.value}
+            setClose={handleClose}
+            open={openModal}
+          />
         )}
+        {participants.length > 0 && <ContributorsTable currency={currency} />}
+        <InputLabel id="select-image" sx={{mt:2}}>Add Image</InputLabel>
+        <Input
+          type="file"
+          labelId="select-image"
+          inputProps={{ accept: "image/*", "aria-label": "choose image" }}
+          sx={{ mb: 1 }}
+        />
         <Button
           type="submit"
           fullWidth
