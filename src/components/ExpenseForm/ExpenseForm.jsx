@@ -15,6 +15,17 @@ import {
   clearParticpants,
   participantsSelector,
 } from "../../store/participantsSlice";
+import { db, storage } from "../../firebase/firebase";
+import { ref, uploadBytes } from "@firebase/storage";
+import { v4 } from "uuid";
+import { authSelector } from "../../store/authSlice";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  updateDoc,
+  doc,
+} from "@firebase/firestore";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -44,9 +55,11 @@ export default function ExpenseForm() {
   const [openModal, setOpenModal] = useState(false);
   const [disable, setDisable] = useState(true);
   const [currency, setCurrency] = useState("");
+  const [uploadedImage, setUploadedImage] = useState(null);
   const participants = useSelector(participantsSelector);
   const totalBillRef = useRef();
   const dispatch = useDispatch();
+  const userAuth = useSelector(authSelector);
 
   useEffect(() => {
     return () => {
@@ -74,9 +87,63 @@ export default function ExpenseForm() {
     setCurrency(event.target.value);
   };
 
+  const handleImageChange = (e) => {
+    const uploadedFile = e.target.files[0];
+    console.log(uploadedFile);
+    setUploadedImage(uploadedFile);
+  };
+
+  const handleExpenseAddition = async (e) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const [userContribution, userBill] = [
+      Number(
+        formData.get("userContribution"),
+        Number(formData.get("userBill"))
+      ),
+    ];
+    const imagePath = uploadedImage
+      ? `images/${uploadedImage.name + v4()}`
+      : null;
+    const imageRef = imagePath && ref(storage, `${imagePath}`);
+    if (imageRef) {
+        uploadBytes(imageRef, uploadedImage).then(() => {
+            console.log("image uploaded");
+          });
+    }
+    const currentUser = {
+      id: userAuth.id,
+      contribution: userContribution,
+      bill: formData.get("userBill"),
+    };
+    const expense = {
+      description: formData.get("description"),
+      totalBill: Number(formData.get("totalBill")),
+      date: formData.get("date"),
+      image: imagePath,
+      participants: [currentUser, ...participants],
+    };
+    console.log(expense);
+    // get reference to expense collection and add the expense form data as a doc there
+    const expenseRef = collection(db, "expense");
+    const expenseDocRef = await addDoc(expenseRef, expense);
+    // get reference to current user's doc in db
+    const userDocRef = doc(db, "users-db", userAuth.id);
+    // add current expense doc's id to the user's doc in an array
+    await updateDoc(userDocRef, {
+      expenses: arrayUnion(expenseDocRef.id),
+    });
+    // do the above for all participants in the expense as well
+    participants.forEach(async (participant) => {
+      await updateDoc(doc(db, "users-db", participant.id), {
+        expenses: arrayUnion(expenseDocRef.id),
+      });
+    });
+  };
+
   return (
     <Box sx={{ width: "50%", ml: "auto", mr: "auto" }}>
-      <Box component="form" sx={{ mt: 3 }}>
+      <Box component="form" sx={{ mt: 3 }} onSubmit={handleExpenseAddition}>
         <TextField
           margin="normal"
           required
@@ -118,12 +185,32 @@ export default function ExpenseForm() {
           required
           inputRef={totalBillRef}
           fullWidth
-          id="total-amount"
-          label="Total Amount"
+          id="total-bill"
+          label="Total Bill"
           type="number"
           onChange={handleDisable}
-          name="totalAmount"
+          name="totalBill"
           autoComplete="current-bill"
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="user-bill"
+          label="Add your bill"
+          type="number"
+          name="userBill"
+          autoComplete="current-bill"
+        />
+        <TextField
+          margin="normal"
+          required
+          fullWidth
+          id="user-contribution"
+          label="Add your contribution"
+          type="number"
+          name="userContribution"
+          autoComplete="current-contribution"
         />
         <Button variant="contained" disabled={disable} onClick={handleOpen}>
           Add Contributors
@@ -136,12 +223,16 @@ export default function ExpenseForm() {
           />
         )}
         {participants.length > 0 && <ContributorsTable currency={currency} />}
-        <InputLabel id="select-image" sx={{mt:2}}>Add Image</InputLabel>
+        <InputLabel htmlFor="image" sx={{ mt: 2 }}>
+          Add Image
+        </InputLabel>
         <Input
           type="file"
-          labelId="select-image"
+          id="image"
+          name="image"
           inputProps={{ accept: "image/*", "aria-label": "choose image" }}
           sx={{ mb: 1 }}
+          onChange={handleImageChange}
         />
         <Button
           type="submit"
