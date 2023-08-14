@@ -12,7 +12,7 @@ import {
 } from "@mui/material";
 import { collection, getDocs, query, where } from "@firebase/firestore";
 import { useLoaderData } from "react-router";
-import { useState } from "react";
+import { useState, useRef } from "react";
 import { db } from "../../firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
 import {
@@ -43,14 +43,26 @@ const style = {
   p: 4,
 };
 
-export default function AddContributers({ open, setClose, totalBill }) {
+export default function AddContributers({
+  open,
+  setClose,
+  totalBill,
+  userBill,
+  userContribution,
+}) {
   const users = useLoaderData();
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [amountError, setAmountError] = useState("");
+  const contributionRef = useRef();
+  const billRef = useRef();
+  const contributorRef = useRef();
   const dispatch = useDispatch();
   const participants = useSelector(participantsSelector);
+  const signedInUserBill = userBill || 0;
+  const signedInUserContribution = userContribution || 0;
+  console.log(signedInUserBill, signedInUserContribution);
 
   const handleChange = (event) => {
     console.log(event.target.value);
@@ -74,8 +86,8 @@ export default function AddContributers({ open, setClose, totalBill }) {
       contribution: 0,
     };
     return (
-      participantPayment.bill + participantBill > totalBill ||
-      participantPayment.contribution + participantContribution > totalBill ||
+      participantPayment.bill + participantBill >= totalBill ||
+      participantPayment.contribution + participantContribution >= totalBill ||
       participantContribution > totalBill ||
       participantBill > totalBill
     );
@@ -92,17 +104,19 @@ export default function AddContributers({ open, setClose, totalBill }) {
         };
       });
       console.log(totalBill);
-      return totalBill;
+      //   return totalBill;
+      return {
+        bill: totalBill.bill + Number(signedInUserBill),
+        contribution: totalBill.contribution + Number(signedInUserContribution),
+      };
     }
   };
 
-  const handleParticipants = async (e) => {
-    e.preventDefault();
-    const formData = new FormData(e.currentTarget);
+  const handleParticipants = async () => {
     const [userEmail, userBill, userContribution] = [
-      formData.get("contributors"),
-      Number(formData.get("bill")),
-      Number(formData.get("contribution")),
+      contributorRef.current.value,
+      Number(billRef.current.value),
+      Number(contributionRef.current.value),
     ];
     const usersRef = collection(db, "users-db");
     const matchedUser = query(usersRef, where("email", "==", userEmail));
@@ -142,11 +156,12 @@ export default function AddContributers({ open, setClose, totalBill }) {
             alignItems: "center",
           }}
         >
-          <Box component="form" sx={{ mt: 3 }} onSubmit={handleParticipants}>
+          <Box component="div" sx={{ mt: 3 }}>
             <InputLabel id="contributors-email">Search by Email</InputLabel>
             <Select
               labelId="contributors-email"
               id="contributors"
+              inputRef={contributorRef}
               name="contributors"
               value={email}
               MenuProps={MenuProps}
@@ -165,6 +180,7 @@ export default function AddContributers({ open, setClose, totalBill }) {
               margin="normal"
               required
               fullWidth
+              inputRef={billRef}
               id="bill"
               label="bill"
               type="number"
@@ -176,6 +192,7 @@ export default function AddContributers({ open, setClose, totalBill }) {
               required
               fullWidth
               id="contribution"
+              inputRef={contributionRef}
               label="contribution"
               type="number"
               name="contribution"
@@ -186,6 +203,7 @@ export default function AddContributers({ open, setClose, totalBill }) {
               fullWidth
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
+              onClick={handleParticipants}
             >
               Done
             </Button>

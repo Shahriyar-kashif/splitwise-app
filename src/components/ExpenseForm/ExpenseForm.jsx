@@ -8,6 +8,7 @@ import {
   TextField,
   MenuItem,
   Input,
+  Typography,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -56,8 +57,11 @@ export default function ExpenseForm() {
   const [disable, setDisable] = useState(true);
   const [currency, setCurrency] = useState("");
   const [uploadedImage, setUploadedImage] = useState(null);
+  const [errorMessage, setErrorMessage] = useState(false);
   const participants = useSelector(participantsSelector);
   const totalBillRef = useRef();
+  const userBillRef = useRef();
+  const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
 
@@ -83,38 +87,59 @@ export default function ExpenseForm() {
   };
 
   const handleCurrency = (event) => {
-    console.log(event.target.value);
     setCurrency(event.target.value);
   };
 
   const handleImageChange = (e) => {
     const uploadedFile = e.target.files[0];
-    console.log(uploadedFile);
     setUploadedImage(uploadedFile);
+  };
+
+  const getTotalExpense = (
+    participants,
+    currentUserBill,
+    currentUserContribution
+  ) => {
+    if (participants.length > 0) {
+      const totalBill = participants.reduce((accum, current) => {
+        return {
+          bill: Number(accum.bill) + Number(current.bill),
+          contribution:
+            Number(accum.contribution) + Number(current.contribution),
+        };
+      });
+      return {
+        bill: totalBill.bill + currentUserBill,
+        contribution: totalBill.contribution + currentUserContribution,
+      };
+    } else {
+      return {
+        bill: currentUserBill,
+        contribution: currentUserContribution,
+      };
+    }
   };
 
   const handleExpenseAddition = async (e) => {
     e.preventDefault();
+    console.log("expense form runs?");
     const formData = new FormData(e.currentTarget);
-    const [userContribution, userBill] = [
-      Number(
-        formData.get("userContribution"),
-        Number(formData.get("userBill"))
-      ),
-    ];
+    const userContribution = Number(formData.get("userContribution")) || 0;
+    const userBill = Number(formData.get("userBill")) || 0;
+    const totalBill = Number(formData.get("totalBill"));
     const imagePath = uploadedImage
       ? `images/${uploadedImage.name + v4()}`
       : null;
     const imageRef = imagePath && ref(storage, `${imagePath}`);
     if (imageRef) {
-        uploadBytes(imageRef, uploadedImage).then(() => {
-            console.log("image uploaded");
-          });
+      uploadBytes(imageRef, uploadedImage).then(() => {
+        console.log("image uploaded");
+      });
     }
     const currentUser = {
       id: userAuth.id,
       contribution: userContribution,
-      bill: formData.get("userBill"),
+      bill: Number(formData.get("userBill")),
     };
     const expense = {
       description: formData.get("description"),
@@ -123,7 +148,18 @@ export default function ExpenseForm() {
       image: imagePath,
       participants: [currentUser, ...participants],
     };
-    console.log(expense);
+    const totalExpense = getTotalExpense(
+      participants,
+      userBill,
+      userContribution
+    );
+    if (
+      totalExpense.bill !== totalBill ||
+      totalExpense.contribution !== totalBill
+    ) {
+      setErrorMessage(true);
+      return;
+    } else setErrorMessage(false);
     // get reference to expense collection and add the expense form data as a doc there
     const expenseRef = collection(db, "expense");
     const expenseDocRef = await addDoc(expenseRef, expense);
@@ -197,6 +233,7 @@ export default function ExpenseForm() {
           required
           fullWidth
           id="user-bill"
+          inputRef={userBillRef}
           label="Add your bill"
           type="number"
           name="userBill"
@@ -208,6 +245,7 @@ export default function ExpenseForm() {
           fullWidth
           id="user-contribution"
           label="Add your contribution"
+          inputRef={userContributionRef}
           type="number"
           name="userContribution"
           autoComplete="current-contribution"
@@ -220,6 +258,8 @@ export default function ExpenseForm() {
             totalBill={totalBillRef.current.value}
             setClose={handleClose}
             open={openModal}
+            userBill={userBillRef.current.value}
+            userContribution={userContributionRef.current.value}
           />
         )}
         {participants.length > 0 && <ContributorsTable currency={currency} />}
@@ -242,6 +282,11 @@ export default function ExpenseForm() {
         >
           Add Expense
         </Button>
+        {errorMessage && (
+          <Typography variant="p" sx={{ color: "red" }}>
+            Bills and Contributions don't add up to total bill
+          </Typography>
+        )}
       </Box>
     </Box>
   );
