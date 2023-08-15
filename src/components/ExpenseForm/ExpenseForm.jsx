@@ -145,9 +145,11 @@ export default function ExpenseForm() {
       description: formData.get("description"),
       totalBill: Number(formData.get("totalBill")),
       date: formData.get("date"),
-      image: imagePath,
+      currency: formData.get("currency"),
+      image: imagePath ?? null,
       participants: [currentUser, ...participants],
     };
+    console.log(participants);
     const totalExpense = getTotalExpense(
       participants,
       userBill,
@@ -162,6 +164,7 @@ export default function ExpenseForm() {
     } else setErrorMessage(false);
     // get reference to expense collection and add the expense form data as a doc there
     const expenseRef = collection(db, "expense");
+    console.log(expenseRef);
     const expenseDocRef = await addDoc(expenseRef, expense);
     // get reference to current user's doc in db
     const userDocRef = doc(db, "users-db", userAuth.id);
@@ -203,6 +206,7 @@ export default function ExpenseForm() {
         <Select
           labelId="select-currency"
           id="currency"
+          name="currency"
           value={currency}
           MenuProps={MenuProps}
           onChange={handleCurrency}

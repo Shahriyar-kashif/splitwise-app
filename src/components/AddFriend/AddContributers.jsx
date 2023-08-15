@@ -60,8 +60,8 @@ export default function AddContributers({
   const contributorRef = useRef();
   const dispatch = useDispatch();
   const participants = useSelector(participantsSelector);
-  const signedInUserBill = userBill || 0;
-  const signedInUserContribution = userContribution || 0;
+  const signedInUserBill = Number(userBill) || 0;
+  const signedInUserContribution = Number(userContribution) || 0;
   console.log(signedInUserBill, signedInUserContribution);
 
   const handleChange = (event) => {
@@ -85,9 +85,14 @@ export default function AddContributers({
       bill: 0,
       contribution: 0,
     };
+
     return (
-      participantPayment.bill + participantBill >= totalBill ||
-      participantPayment.contribution + participantContribution >= totalBill ||
+      participantPayment.bill + participantBill + signedInUserBill >
+        totalBill ||
+      participantPayment.contribution +
+        participantContribution +
+        signedInUserContribution >
+        totalBill ||
       participantContribution > totalBill ||
       participantBill > totalBill
     );
@@ -106,8 +111,8 @@ export default function AddContributers({
       console.log(totalBill);
       //   return totalBill;
       return {
-        bill: totalBill.bill + Number(signedInUserBill),
-        contribution: totalBill.contribution + Number(signedInUserContribution),
+        bill: totalBill.bill,
+        contribution: totalBill.contribution,
       };
     }
   };
@@ -134,12 +139,16 @@ export default function AddContributers({
 
     if (!userSnapShot.empty) {
       const userDoc = userSnapShot.docs[0];
+      console.log(userDoc.data().firstName);
       const participantExpense = {
         id: userDoc.id,
         contribution: userContribution,
         bill: userBill,
+        firstName: userDoc.data().firstName,
+        lastName: userDoc.data().lastName,
         email: userEmail,
       };
+      console.log(participantExpense);
       dispatch(addParticipants(participantExpense));
       setCurrentParticipant(userEmail);
     }
