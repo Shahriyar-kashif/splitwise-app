@@ -25,7 +25,6 @@ export default function Navbar(props) {
   const userAuth = useSelector(authSelector);
   const { window } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
-  const navigate = useNavigate();
   const dispatch = useDispatch();
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);

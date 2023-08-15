@@ -24,7 +24,9 @@ export default function UserPanel() {
           to={`/user/${path.userId}`}
           index={0}
         />
-        <Tab label="All Expenses" index={1} />
+        <Tab label="All Expenses" index={1}
+        component={Link}
+        to="all-expenses"/>
         <Tab
           label="Add Expense"
           component={Link}
