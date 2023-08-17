@@ -18,7 +18,6 @@ import { fetchExpenseList } from "../../Utilities/FirebaseUtilities";
 import SkeletonUI from "../SkeletonUI/SkeletonUI";
 
 export default function ExpensesTable() {
-  console.log("component start?");
   const [report, setReport] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [expenseDetails, setExpenseDetails] = useState([]);

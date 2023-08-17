@@ -257,6 +257,7 @@ export default function ExpenseForm() {
               inputRef={userBillRef}
               label="Add your bill"
               type="number"
+              inputProps={{ min:0 }}
               name="userBill"
               autoComplete="current-bill"
             />
@@ -270,6 +271,7 @@ export default function ExpenseForm() {
               label="Add your contribution"
               inputRef={userContributionRef}
               type="number"
+              inputProps={{ min:0 }}
               name="userContribution"
               autoComplete="current-contribution"
             />

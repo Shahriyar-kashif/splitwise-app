@@ -41,6 +41,7 @@ export default function SignupForm() {
         setSubmissionError(error.message);
       });
   };
+  
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />

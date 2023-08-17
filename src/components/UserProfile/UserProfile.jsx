@@ -1,18 +1,15 @@
-import { useSelector } from "react-redux";
 import {
-  UNSAFE_useRouteId,
-  redirect,
-  useLoaderData,
   useNavigate,
   useParams,
 } from "react-router";
-import { authSelector } from "../../store/authSlice";
 import {
   Box,
   Button,
+  Divider,
   List,
   ListItem,
   ListItemText,
+  Paper,
   Skeleton,
   Typography,
 } from "@mui/material";
@@ -107,17 +104,58 @@ export default function UserProfile() {
   };
 
   return (
-    <Box sx={{ width: 2 / 4, ml: "5%", mt: 5 }}>
+    <Box sx={{ mx: "5%", mt: 5 }}>
       {userData? (
-        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
+        <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
           Welcome, {userData.firstName} {userData.lastName}
         </Typography>
-      ): <Skeleton variant="rectangular" animation="wave" sx={{width:300}}/>}
-      <Typography component="h2" variant="h5">
+      ): <Skeleton variant="rectangular" animation="wave" sx={{width:300, mx:'auto', mb:10}}/>}
+      <Paper elevation={3} sx={{ display:'flex', justifyContent:'center', width:'60%', mx:'auto' }}>
+      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
+      <Typography align='center' color="text.secondary" component="h2" variant="h6">
         Your outstanding debts
       </Typography>
-
+        {userOwes.map((user) => {
+          return (
+            <ListItem
+              secondaryAction={
+                <Button
+                  onClick={() =>
+                    settleExpense(user.expenseId, user.payerId, user.payeeId)
+                  }
+                >
+                  Settle
+                </Button>
+              }
+            >
+              <ListItemText
+                primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+      <Divider orientation="vertical" flexItem/>
       <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
+      <Typography align='center' color="text.secondary" component="h2" variant="h6">
+        Debts owed to you
+      </Typography>
+        {userIsOwed.map((user) => {
+          return (
+            <ListItem alignItems="center">
+              <ListItemText
+                align="center" primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
+              />
+            </ListItem>
+          );
+        })}
+      </List>
+      </Paper>
+      {/* <Typography component="h2" variant="h5">
+        Your outstanding debts
+      </Typography> */}
+
+      {/* <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
         {userOwes.map((user) => {
           return (
             <ListItem
@@ -138,11 +176,11 @@ export default function UserProfile() {
             </ListItem>
           );
         })}
-      </List>
-      <Typography component="h2" variant="h5">
+      </List> */}
+      {/* <Typography component="h2" variant="h5">
         Debts owed to you
-      </Typography>
-      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
+      </Typography> */}
+      {/* <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
         {userIsOwed.map((user) => {
           return (
             <ListItem>
@@ -152,7 +190,7 @@ export default function UserProfile() {
             </ListItem>
           );
         })}
-      </List>
+      </List> */}
     </Box>
   );
 }

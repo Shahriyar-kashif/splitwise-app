@@ -12,7 +12,7 @@ import MenuIcon from "@mui/icons-material/Menu";
 import Toolbar from "@mui/material/Toolbar";
 import Typography from "@mui/material/Typography";
 import Button from "@mui/material/Button";
-import { Link, useNavigate } from "react-router-dom";
+import { Link } from "react-router-dom";
 import { useState } from "react";
 import { authSelector, clearUser } from "../../store/authSlice";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,14 +26,17 @@ export default function Navbar(props) {
   const { window } = props;
   const [mobileOpen, setMobileOpen] = useState(false);
   const dispatch = useDispatch();
+
   const handleDrawerToggle = () => {
     setMobileOpen((prevState) => !prevState);
   };
+
   const handleLogout = () => {
     signOut(auth).then(() => {
       dispatch(clearUser());
     });
   };
+
   const drawer = (
     <Box onClick={handleDrawerToggle} sx={{ textAlign: "center" }}>
       <Typography variant="h6" sx={{ my: 2 }}>
@@ -41,13 +44,54 @@ export default function Navbar(props) {
       </Typography>
       <Divider />
       <List>
+        {userAuth && (
+          <>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
+                to={`/user/${userAuth.id}`}
+                sx={{ textAlign: "center" }}
+              >
+                {userAuth && <ListItemText primary="Dashboard" />}
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
+                to={`/user/${userAuth.id}/all-expenses`}
+                sx={{ textAlign: "center" }}
+              >
+                {userAuth && <ListItemText primary="All expenses" />}
+              </ListItemButton>
+            </ListItem>
+            <ListItem disablePadding>
+              <ListItemButton
+                component={Link}
+                to={`/user/${userAuth.id}/add-expense`}
+                sx={{ textAlign: "center" }}
+              >
+                {userAuth && <ListItemText primary="Add Expense" />}
+              </ListItemButton>
+            </ListItem>
+          </>
+        )}
+        <ListItem disablePadding>
+          <ListItemButton
+            component={Link}
+            to="/login"
+            onClick={handleLogout}
+            sx={{ textAlign: "center" }}
+          >
+            {userAuth && <ListItemText primary="Log out" />}
+          </ListItemButton>
+        </ListItem>
         <ListItem disablePadding>
           <ListItemButton
             component={Link}
             to="/login"
             sx={{ textAlign: "center" }}
           >
-            <ListItemText primary="Log in" />
+            {!userAuth && <ListItemText primary="Log in" />}
           </ListItemButton>
         </ListItem>
         <ListItem disablePadding>
@@ -56,7 +100,7 @@ export default function Navbar(props) {
             to="/signup"
             sx={{ textAlign: "center" }}
           >
-            <ListItemText primary="Sign up" />
+            {!userAuth && <ListItemText primary="Sign up" />}
           </ListItemButton>
         </ListItem>
       </List>
@@ -108,14 +152,37 @@ export default function Navbar(props) {
               </Button>
             )}
             {userAuth && (
-              <Button
-                onClick={handleLogout}
-                component={Link}
-                to="/signup"
-                sx={{ color: "#fff" }}
-              >
-                Log out
-              </Button>
+              <>
+                <Button
+                  component={Link}
+                  to={`/user/${userAuth.id}`}
+                  sx={{ color: "#fff" }}
+                >
+                  Dashboard
+                </Button>
+                <Button
+                  component={Link}
+                  to={`/user/${userAuth.id}/all-expenses`}
+                  sx={{ color: "#fff" }}
+                >
+                  All Expenses
+                </Button>
+                <Button
+                  component={Link}
+                  to={`/user/${userAuth.id}/add-expense`}
+                  sx={{ color: "#fff" }}
+                >
+                  Add Expense
+                </Button>
+                <Button
+                  onClick={handleLogout}
+                  component={Link}
+                  to="/signup"
+                  sx={{ color: "#fff" }}
+                >
+                  Log out
+                </Button>
+              </>
             )}
           </Box>
         </Toolbar>

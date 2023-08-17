@@ -12,7 +12,7 @@ const style = {
   top: "50%",
   left: "50%",
   transform: "translate(-50%, -50%)",
-  width: 400,
+  width: 600,
   bgcolor: "background.paper",
   border: "2px solid #000",
   boxShadow: 24,
@@ -45,7 +45,7 @@ export default function ExpenseReport({
             </Typography>
             {expenseDetails.participants.map((expense) => {
               return (
-                <Typography sx={{ mb: 1 }}>
+                <Typography color="text.secondary" sx={{ mb: 1 }}>
                   { expense.id === param.userId? 'You': expense?.name  } ordered for {expense.bill}{" "}
                   {expenseDetails.currency} and paid {expense.contribution}{" "}
                   {expenseDetails.currency}
@@ -57,7 +57,7 @@ export default function ExpenseReport({
             </Typography>
             {report.map((expense) => {
               return (
-                <Typography sx={{ mb: 1 }}>
+                <Typography color="text.secondary" sx={{ mb: 1 }}>
                   {expense.payerId === param.userId ? 'You owe': expense?.payerName + ' owes'}{" "}
                   {expense.debt} {expenseDetails.currency} to{" "}
                   {expense.payeeId === param.userId? 'You': expense.payeeName}
@@ -70,7 +70,7 @@ export default function ExpenseReport({
             {expenseDetails.image ? (
               <Box component="img" src={`${imageSrc}`} alt="picture of bill" />
             ) : (
-              <Typography component="p" sx={{ mb: 2 }}>
+              <Typography color="text.secondary" component="p" sx={{ mb: 2 }}>
                 No image found
               </Typography>
             )}

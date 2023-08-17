@@ -10,7 +10,7 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import { collection, doc, getDoc, getDocs, query, where } from "@firebase/firestore";
+import { collection, getDocs, query, where } from "@firebase/firestore";
 import { useParams } from "react-router";
 import { useState, useRef, useEffect } from "react";
 import { db } from "../../firebase/firebase";
@@ -71,15 +71,6 @@ export default function AddContributers({
     const users = [];
     usersSnapshot.forEach((doc) => users.push(doc.data()));
     return users;
-    // const userId = params.userId;
-    // const userRef = doc(db, "users-db", userId);
-    // const userSnap = await getDoc(userRef);
-    // if (userSnap.exists()) {
-    //   usersSnapshot.forEach((doc) => users.push(doc.data()));
-    //   return users;
-    // } else {
-    //   return [];
-    // }
   }
 
   useEffect(() => {
@@ -267,21 +258,4 @@ export default function AddContributers({
       </Container>
     </Modal>
   );
-}
-
-export async function loader({ params }) {
-  const usersSnapshot = await getDocs(collection(db, "users-db"));
-  const users = [];
-//   usersSnapshot.forEach((doc) => users.push(doc.data()));
-//   return users;
-  const userId = params.userId;
-  const userRef = doc(db, "users-db", userId);
-  const userSnap = await getDoc(userRef);
-  if (userSnap.exists()) {
-    const userData = userSnap.data();
-    usersSnapshot.forEach((doc) => users.push(doc.data()));
-    return [userData, users];
-  } else {
-    return [null, []];
-  }
 }
