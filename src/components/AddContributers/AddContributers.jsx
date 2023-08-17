@@ -11,14 +11,15 @@ import {
   Typography,
 } from "@mui/material";
 import { collection, doc, getDoc, getDocs, query, where } from "@firebase/firestore";
-import { useLoaderData } from "react-router";
-import { useState, useRef } from "react";
+import { useParams } from "react-router";
+import { useState, useRef, useEffect } from "react";
 import { db } from "../../firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addParticipants,
   participantsSelector,
 } from "../../store/participantsSlice";
+import SkeletonUI from "../SkeletonUI/SkeletonUI";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -50,11 +51,12 @@ export default function AddContributers({
   userBill,
   userContribution,
 }) {
-  const [, users] = useLoaderData();
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [amountError, setAmountError] = useState("");
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const contributionRef = useRef();
   const billRef = useRef();
   const contributorRef = useRef();
@@ -62,6 +64,34 @@ export default function AddContributers({
   const participants = useSelector(participantsSelector);
   const signedInUserBill = Number(userBill) || 0;
   const signedInUserContribution = Number(userContribution) || 0;
+  const params = useParams();
+
+  const fetchUsers = async () => {
+    const usersSnapshot = await getDocs(collection(db, "users-db"));
+    const users = [];
+    usersSnapshot.forEach((doc) => users.push(doc.data()));
+    return users;
+    // const userId = params.userId;
+    // const userRef = doc(db, "users-db", userId);
+    // const userSnap = await getDoc(userRef);
+    // if (userSnap.exists()) {
+    //   usersSnapshot.forEach((doc) => users.push(doc.data()));
+    //   return users;
+    // } else {
+    //   return [];
+    // }
+  }
+
+  useEffect(() => {
+    fetchUsers().then(users => {
+      setUsers([...users]);
+      setIsLoading(false);
+    }).catch(error => {
+      console.log(error);
+      setIsLoading(false);
+    })
+  }, [])
+
 
   const handleChange = (event) => {
     setEmail(event.target.value);
@@ -169,6 +199,7 @@ export default function AddContributers({
               onChange={handleChange}
               sx={{ width: "100%" }}
             >
+              {isLoading && <MenuItem><SkeletonUI /></MenuItem>}
               {users.map((user) => {
                 return (
                   <MenuItem key={user.email} value={user.email}>

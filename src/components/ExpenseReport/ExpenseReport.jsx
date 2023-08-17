@@ -6,10 +6,7 @@ import {
   Modal,
   Typography,
 } from "@mui/material";
-import { useSelector } from "react-redux";
-import { authSelector } from "../../store/authSlice";
 import { useParams } from "react-router";
-
 const style = {
   position: "absolute",
   top: "50%",
@@ -30,11 +27,6 @@ export default function ExpenseReport({
   expenseDetails,
   imageSrc,
 }) {
-  const userAuth = useSelector(authSelector);
-  const userOwes = report.filter((expense) => expense.payerId === userAuth.id);
-  const userIsOwed = report.filter(
-    (expense) => expense.payeeId === userAuth.id
-  );
   const param = useParams();
   return (
     <Modal open={open}>
@@ -68,7 +60,7 @@ export default function ExpenseReport({
                 <Typography sx={{ mb: 1 }}>
                   {expense.payerId === param.userId ? 'You owe': expense?.payerName + ' owes'}{" "}
                   {expense.debt} {expenseDetails.currency} to{" "}
-                  {expense.payeeName}
+                  {expense.payeeId === param.userId? 'You': expense.payeeName}
                 </Typography>
               );
             })}

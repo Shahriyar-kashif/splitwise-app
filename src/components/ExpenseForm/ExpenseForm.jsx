@@ -9,6 +9,7 @@ import {
   MenuItem,
   Input,
   Typography,
+  Grid,
 } from "@mui/material";
 import { useEffect, useRef, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
@@ -26,9 +27,9 @@ import {
   collection,
   updateDoc,
   doc,
-  getDoc,
 } from "@firebase/firestore";
-import { useLoaderData } from "react-router";
+import { useParams } from "react-router";
+import { fetchUserData } from "../../Utilities/FirebaseUtilities";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -60,15 +61,19 @@ export default function ExpenseForm() {
   const [currency, setCurrency] = useState("");
   const [uploadedImage, setUploadedImage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(false);
+  const [userData, setUserData] = useState(null);
   const participants = useSelector(participantsSelector);
   const totalBillRef = useRef();
   const userBillRef = useRef();
   const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
-  const [userData, ] = useLoaderData();
+  const params = useParams();
 
   useEffect(() => {
+    fetchUserData(params).then(userData => {
+        setUserData(userData);
+    })
     return () => {
       dispatch(clearParticpants());
     };
@@ -134,8 +139,7 @@ export default function ExpenseForm() {
       : null;
     const imageRef = imagePath && ref(storage, `${imagePath}`);
     if (imageRef) {
-      uploadBytes(imageRef, uploadedImage).then(() => {
-      });
+      uploadBytes(imageRef, uploadedImage).then(() => {});
     }
     const currentUser = {
       id: userAuth.id,
@@ -170,8 +174,8 @@ export default function ExpenseForm() {
     // get reference to current user's doc in db
     const userDocRef = doc(db, "users-db", userAuth.id);
     await updateDoc(expenseDocRef, {
-        id: expenseDocRef.id,
-    })
+      id: expenseDocRef.id,
+    });
     // add current expense doc's id to the user's doc in an array
     await updateDoc(userDocRef, {
       expenses: arrayUnion(expenseDocRef.id),
@@ -197,15 +201,34 @@ export default function ExpenseForm() {
           name="description"
           autoComplete="current-description"
         />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="date"
-          type="date"
-          name="date"
-          autoComplete="current-date"
-        />
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="date"
+              type="date"
+              name="date"
+              autoComplete="current-date"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              required
+              inputRef={totalBillRef}
+              fullWidth
+              id="total-bill"
+              inputProps={{min:0}}
+              label="Total Bill"
+              type="number"
+              onChange={handleDisable}
+              name="totalBill"
+              autoComplete="current-bill"
+            />
+          </Grid>
+        </Grid>
         <InputLabel id="select-currency">Select Currency</InputLabel>
         <Select
           labelId="select-currency"
@@ -224,40 +247,34 @@ export default function ExpenseForm() {
             );
           })}
         </Select>
-        <TextField
-          margin="normal"
-          required
-          inputRef={totalBillRef}
-          fullWidth
-          id="total-bill"
-          label="Total Bill"
-          type="number"
-          onChange={handleDisable}
-          name="totalBill"
-          autoComplete="current-bill"
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="user-bill"
-          inputRef={userBillRef}
-          label="Add your bill"
-          type="number"
-          name="userBill"
-          autoComplete="current-bill"
-        />
-        <TextField
-          margin="normal"
-          required
-          fullWidth
-          id="user-contribution"
-          label="Add your contribution"
-          inputRef={userContributionRef}
-          type="number"
-          name="userContribution"
-          autoComplete="current-contribution"
-        />
+        <Grid container spacing={2}>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="user-bill"
+              inputRef={userBillRef}
+              label="Add your bill"
+              type="number"
+              name="userBill"
+              autoComplete="current-bill"
+            />
+          </Grid>
+          <Grid item xs={12} sm={6}>
+            <TextField
+              margin="normal"
+              required
+              fullWidth
+              id="user-contribution"
+              label="Add your contribution"
+              inputRef={userContributionRef}
+              type="number"
+              name="userContribution"
+              autoComplete="current-contribution"
+            />
+          </Grid>
+        </Grid>
         <Button variant="contained" disabled={disable} onClick={handleOpen}>
           Add Contributors
         </Button>
