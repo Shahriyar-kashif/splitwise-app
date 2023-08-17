@@ -10,7 +10,7 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import { collection, getDocs, query, where } from "@firebase/firestore";
+import { collection, doc, getDoc, getDocs, query, where } from "@firebase/firestore";
 import { useLoaderData } from "react-router";
 import { useState, useRef } from "react";
 import { db } from "../../firebase/firebase";
@@ -50,7 +50,7 @@ export default function AddContributers({
   userBill,
   userContribution,
 }) {
-  const users = useLoaderData();
+  const [, users] = useLoaderData();
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
@@ -62,10 +62,8 @@ export default function AddContributers({
   const participants = useSelector(participantsSelector);
   const signedInUserBill = Number(userBill) || 0;
   const signedInUserContribution = Number(userContribution) || 0;
-  console.log(signedInUserBill, signedInUserContribution);
 
   const handleChange = (event) => {
-    console.log(event.target.value);
     setEmail(event.target.value);
   };
 
@@ -100,7 +98,6 @@ export default function AddContributers({
 
   const compareAmount = (participants) => {
     if (participants.length > 0) {
-      console.log("working?");
       const totalBill = participants.reduce((accum, current) => {
         return {
           bill: Number(accum.bill) + Number(current.bill),
@@ -108,8 +105,6 @@ export default function AddContributers({
             Number(accum.contribution) + Number(current.contribution),
         };
       });
-      console.log(totalBill);
-      //   return totalBill;
       return {
         bill: totalBill.bill,
         contribution: totalBill.contribution,
@@ -139,16 +134,13 @@ export default function AddContributers({
 
     if (!userSnapShot.empty) {
       const userDoc = userSnapShot.docs[0];
-      console.log(userDoc.data().firstName);
       const participantExpense = {
         id: userDoc.id,
         contribution: userContribution,
         bill: userBill,
-        firstName: userDoc.data().firstName,
-        lastName: userDoc.data().lastName,
+        name: `${userDoc.data().firstName} ${userDoc.data().lastName}`,
         email: userEmail,
       };
-      console.log(participantExpense);
       dispatch(addParticipants(participantExpense));
       setCurrentParticipant(userEmail);
     }
@@ -246,9 +238,19 @@ export default function AddContributers({
   );
 }
 
-export async function loader() {
+export async function loader({ params }) {
   const usersSnapshot = await getDocs(collection(db, "users-db"));
   const users = [];
-  usersSnapshot.forEach((doc) => users.push(doc.data()));
-  return users;
+//   usersSnapshot.forEach((doc) => users.push(doc.data()));
+//   return users;
+  const userId = params.userId;
+  const userRef = doc(db, "users-db", userId);
+  const userSnap = await getDoc(userRef);
+  if (userSnap.exists()) {
+    const userData = userSnap.data();
+    usersSnapshot.forEach((doc) => users.push(doc.data()));
+    return [userData, users];
+  } else {
+    return [null, []];
+  }
 }

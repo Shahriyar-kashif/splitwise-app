@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
+import { useParams } from "react-router";
 
 const style = {
   position: "absolute",
@@ -34,8 +35,7 @@ export default function ExpenseReport({
   const userIsOwed = report.filter(
     (expense) => expense.payeeId === userAuth.id
   );
-  console.log(report);
-  console.log(expenseDetails);
+  const param = useParams();
   return (
     <Modal open={open}>
       <Container component="main" maxwidth="xs" sx={style}>
@@ -54,7 +54,7 @@ export default function ExpenseReport({
             {expenseDetails.participants.map((expense) => {
               return (
                 <Typography sx={{ mb: 1 }}>
-                  {expense?.firstName || "You"} ordered for {expense.bill}{" "}
+                  { expense.id === param.userId? 'You': expense?.name  } ordered for {expense.bill}{" "}
                   {expenseDetails.currency} and paid {expense.contribution}{" "}
                   {expenseDetails.currency}
                 </Typography>
@@ -66,8 +66,9 @@ export default function ExpenseReport({
             {report.map((expense) => {
               return (
                 <Typography sx={{ mb: 1 }}>
-                  {expense?.firstName || "You"} owe {expense.debt}{" "}
-                  {expenseDetails.currency} to {expense.payeeFirstName}
+                  {expense.payerId === param.userId ? 'You owe': expense?.payerName + ' owes'}{" "}
+                  {expense.debt} {expenseDetails.currency} to{" "}
+                  {expense.payeeName}
                 </Typography>
               );
             })}

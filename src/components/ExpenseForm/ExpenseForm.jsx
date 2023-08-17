@@ -1,4 +1,4 @@
-import AddContributers from "../AddFriend/AddContributers";
+import AddContributers from "../AddContributers/AddContributers";
 import ContributorsTable from "../ContributorsTable/ContributorsTable";
 import {
   Box,
@@ -26,7 +26,9 @@ import {
   collection,
   updateDoc,
   doc,
+  getDoc,
 } from "@firebase/firestore";
+import { useLoaderData } from "react-router";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -64,6 +66,7 @@ export default function ExpenseForm() {
   const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
+  const [userData, ] = useLoaderData();
 
   useEffect(() => {
     return () => {
@@ -122,7 +125,6 @@ export default function ExpenseForm() {
 
   const handleExpenseAddition = async (e) => {
     e.preventDefault();
-    console.log("expense form runs?");
     const formData = new FormData(e.currentTarget);
     const userContribution = Number(formData.get("userContribution")) || 0;
     const userBill = Number(formData.get("userBill")) || 0;
@@ -133,11 +135,12 @@ export default function ExpenseForm() {
     const imageRef = imagePath && ref(storage, `${imagePath}`);
     if (imageRef) {
       uploadBytes(imageRef, uploadedImage).then(() => {
-        console.log("image uploaded");
       });
     }
     const currentUser = {
       id: userAuth.id,
+      email: userData?.email,
+      name: `${userData?.firstName} ${userData?.lastName}`,
       contribution: userContribution,
       bill: Number(formData.get("userBill")),
     };
@@ -149,7 +152,6 @@ export default function ExpenseForm() {
       image: imagePath ?? null,
       participants: [currentUser, ...participants],
     };
-    console.log(participants);
     const totalExpense = getTotalExpense(
       participants,
       userBill,
@@ -164,10 +166,12 @@ export default function ExpenseForm() {
     } else setErrorMessage(false);
     // get reference to expense collection and add the expense form data as a doc there
     const expenseRef = collection(db, "expense");
-    console.log(expenseRef);
     const expenseDocRef = await addDoc(expenseRef, expense);
     // get reference to current user's doc in db
     const userDocRef = doc(db, "users-db", userAuth.id);
+    await updateDoc(expenseDocRef, {
+        id: expenseDocRef.id,
+    })
     // add current expense doc's id to the user's doc in an array
     await updateDoc(userDocRef, {
       expenses: arrayUnion(expenseDocRef.id),

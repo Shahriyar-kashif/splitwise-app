@@ -14,6 +14,7 @@ import { useLoaderData } from "react-router";
 import { useState } from "react";
 import ExpenseReport from "../ExpenseReport/ExpenseReport";
 import { getDownloadURL, ref } from "@firebase/storage";
+import { settleDebt } from "../../Utilities/ExpenseSettlementUtil";
 
 export default function ExpensesTable() {
   const [report, setReport] = useState([]);
@@ -22,101 +23,13 @@ export default function ExpensesTable() {
   const [imageUrl, setImageUrl] = useState(null);
   const expenseList = useLoaderData();
 
-
-  const settleDebt = (payees, payers, transaction) => {
-    const payeesCopy = JSON.parse(JSON.stringify(payees));
-    const payersCopy = JSON.parse(JSON.stringify(payers));
-
-    if (payeesCopy.length === 0 || payersCopy.length === 0) {
-      setReport([...transaction]);
-      return;
-    }
-    const maxDebtInd = getMaxDebtInd(payersCopy); //payers
-    const maxCreditInd = getMaxCreditInd(payeesCopy); //payees
-    // received max debt and max credit indices
-    const debt =
-      payersCopy[maxDebtInd].bill - payersCopy[maxDebtInd].contribution;
-    const credit =
-      payeesCopy[maxCreditInd].contribution - payeesCopy[maxCreditInd].bill;
-    //received max net amounts among payers and payees
-    // 15(credit) and 10(debt)
-    if (debt === 0) {
-      payersCopy.splice(maxDebtInd, 1);
-      settleDebt(payeesCopy, payersCopy, transaction);
-    } else if (credit === 0) {
-      payeesCopy.splice(maxCreditInd, 1);
-      settleDebt(payeesCopy, payersCopy, transaction);
-    }
-    if (debt === credit) {
-      const newTransaction = {
-        payerFirstName: payersCopy[maxDebtInd]?.firstName,
-        payerLastName: payersCopy[maxDebtInd]?.lastName,
-        debt: debt,
-        payeeLastName: payeesCopy[maxCreditInd]?.lastName,
-        payeeFirstName: payeesCopy[maxCreditInd]?.firstName,
-        payerId: payersCopy[maxDebtInd].id,
-        payeeId: payeesCopy[maxCreditInd].id,
-      };
-      transaction.push(newTransaction);
-      payeesCopy.splice(maxCreditInd, 1);
-      payersCopy.splice(maxDebtInd, 1); //tested. works fine
-
-      settleDebt(payeesCopy, payersCopy, transaction);
-    }
-
-    if (debt < credit) {
-      payeesCopy[maxCreditInd].contribution -= debt;
-      //in this case the payer is settled
-      const newTransaction = {
-        payer: payersCopy[maxDebtInd].id,
-        debt: debt,
-        payee: payeesCopy[maxCreditInd].id,
-      };
-      transaction.push(newTransaction);
-      payersCopy.splice(maxDebtInd, 1);
-      settleDebt(payeesCopy, payersCopy, transaction);
-    }
-
-    if (debt > credit) {
-      payersCopy[maxDebtInd].contribution += debt;
-      //in this case, the payee would be settled
-      const newTransaction = {
-        payer: payersCopy[maxDebtInd].id,
-        debt: debt,
-        payee: payeesCopy[maxCreditInd].id,
-      };
-      transaction.push(newTransaction);
-      payeesCopy.splice(maxCreditInd, 1);
-      settleDebt(payeesCopy, payersCopy, transaction);
-    }
-  };
-  const getMaxCreditInd = (arr) => {
-    const netAmount = arr.map((user) => user.contribution - user.bill);
-    const maxAmount = Math.max(...netAmount);
-    const maxIndx = arr.findIndex(
-      (user) => user.contribution - user.bill === maxAmount
-    );
-    return maxIndx;
-  };
-
-  const getMaxDebtInd = (arr) => {
-    const netAmount = arr.map((user) => user.bill - user.contribution);
-    const maxAmount = Math.max(...netAmount);
-    const maxIndx = arr.findIndex(
-      (user) => user.bill - user.contribution === maxAmount
-    );
-    return maxIndx;
-  };
-
   const getImageUrl = (imagePath) => {
     if (imagePath) {
-        getDownloadURL(ref(storage, imagePath))
-        .then(url => {
-            console.log(url);
-            setImageUrl(url);
-        })
+      getDownloadURL(ref(storage, imagePath)).then((url) => {
+        setImageUrl(url);
+      });
     }
-  }
+  };
   const viewReport = (expense) => {
     const participants = expense.participants;
     const transaction = [];
@@ -128,12 +41,13 @@ export default function ExpensesTable() {
     const payees = participants.filter((user) => user.bill < user.contribution);
     getImageUrl(expense.image);
     settleDebt(payees, payers, transaction);
-    setExpenseDetails({...expense});
+    setReport([...transaction]);
+    setExpenseDetails({ ...expense });
     setOpenModal(true);
   };
 
   return (
-    <Box sx={{ mt:5 }}>
+    <Box sx={{ mt: 5 }}>
       <TableContainer sx={{ width: "80%", mr: "auto", ml: "auto" }}>
         <Table sx={{ minWidth: 650 }} aria-label="list of expenses">
           <TableHead>
@@ -185,9 +99,8 @@ export async function loader({ params }) {
   const docRef = doc(db, "users-db", params.userId);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
-    const userData = docSnap.data(); // to get the expenses array from the user's doc
+    const userData = docSnap.data();
     const expenseIds = userData.expenses || [];
-    // const listOfExpenses = [];
     const listOfPromises = expenseIds.map(async (expenseId) => {
       const expenseRef = doc(db, "expense", expenseId);
       const expenseSnap = await getDoc(expenseRef);
@@ -198,5 +111,7 @@ export async function loader({ params }) {
     });
     const listOfExpenses = await Promise.all(listOfPromises);
     return listOfExpenses;
+  } else {
+    return [];
   }
 }
