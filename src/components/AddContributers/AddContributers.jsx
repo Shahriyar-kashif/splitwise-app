@@ -11,7 +11,6 @@ import {
   Typography,
 } from "@mui/material";
 import { collection, getDocs, query, where } from "@firebase/firestore";
-import { useParams } from "react-router";
 import { useState, useRef, useEffect } from "react";
 import { db } from "../../firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
@@ -20,6 +19,9 @@ import {
   participantsSelector,
 } from "../../store/participantsSlice";
 import SkeletonUI from "../SkeletonUI/SkeletonUI";
+import { fetchUserData } from "../../Utilities/FirebaseUtilities";
+import { toast } from "react-toastify";
+import { authSelector } from "../../store/authSlice";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -55,6 +57,7 @@ export default function AddContributers({
   const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [amountError, setAmountError] = useState("");
+  const [negativeValError, setNegativeValError] = useState(false);
   const [users, setUsers] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const contributionRef = useRef();
@@ -64,27 +67,33 @@ export default function AddContributers({
   const participants = useSelector(participantsSelector);
   const signedInUserBill = Number(userBill) || 0;
   const signedInUserContribution = Number(userContribution) || 0;
-  const params = useParams();
+  const userAuth = useSelector(authSelector);
+  console.log(userAuth);
 
   const fetchUsers = async () => {
     const usersSnapshot = await getDocs(collection(db, "users-db"));
     const users = [];
+    const userData = await fetchUserData(userAuth);
+    console.log(userData);
     usersSnapshot.forEach((doc) => users.push(doc.data()));
-    return users;
-  }
+    const updatedUsers = users.filter((user) => user.email !== userData.email);
+    console.log(updatedUsers);
+    return updatedUsers;
+  };
 
   useEffect(() => {
-    fetchUsers().then(users => {
-      setUsers([...users]);
-      setIsLoading(false);
-    }).catch(error => {
-      console.log(error);
-      setIsLoading(false);
-    })
-  }, [])
+    fetchUsers()
+      .then((users) => {
+        setUsers([...users]);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setIsLoading(false);
+      });
+  }, []);
 
-
-  const handleChange = (event) => {
+  const handleEmailChange = (event) => {
     setEmail(event.target.value);
   };
 
@@ -139,6 +148,7 @@ export default function AddContributers({
       Number(billRef.current.value),
       Number(contributionRef.current.value),
     ];
+
     const usersRef = collection(db, "users-db");
     const matchedUser = query(usersRef, where("email", "==", userEmail));
     const userSnapShot = await getDocs(matchedUser);
@@ -153,6 +163,11 @@ export default function AddContributers({
       return;
     } else setAmountError(false);
 
+    if (userBill < 0 || userContribution < 0) {
+      setNegativeValError(true);
+      return;
+    } else setNegativeValError(false);
+
     if (!userSnapShot.empty) {
       const userDoc = userSnapShot.docs[0];
       const participantExpense = {
@@ -164,6 +179,7 @@ export default function AddContributers({
       };
       dispatch(addParticipants(participantExpense));
       setCurrentParticipant(userEmail);
+      toast.success("Contributor added successfully!");
     }
   };
 
@@ -187,10 +203,14 @@ export default function AddContributers({
               name="contributors"
               value={email}
               MenuProps={MenuProps}
-              onChange={handleChange}
+              onChange={handleEmailChange}
               sx={{ width: "100%" }}
             >
-              {isLoading && <MenuItem><SkeletonUI /></MenuItem>}
+              {isLoading && (
+                <MenuItem>
+                  <SkeletonUI />
+                </MenuItem>
+              )}
               {users.map((user) => {
                 return (
                   <MenuItem key={user.email} value={user.email}>
@@ -205,7 +225,7 @@ export default function AddContributers({
               fullWidth
               inputRef={billRef}
               id="bill"
-              label="bill"
+              label="Add order bill of the contributor"
               type="number"
               name="bill"
               autoComplete="current-bill"
@@ -216,7 +236,7 @@ export default function AddContributers({
               fullWidth
               id="contribution"
               inputRef={contributionRef}
-              label="contribution"
+              label="Add amount paid by the contributor"
               type="number"
               name="contribution"
               autoComplete="current-contribution"
@@ -239,18 +259,23 @@ export default function AddContributers({
               Close
             </Button>
             {currentParticipant && (
-              <Typography component="p" sx={{ color: "green" }}>
+              <Typography component="p" sx={{ color: "green" }} align="center">
                 {currentParticipant} added successfully!
               </Typography>
             )}
             {errorMessage && (
-              <Typography component="p" sx={{ color: "red" }}>
+              <Typography component="p" sx={{ color: "red" }} align="center">
                 {currentParticipant} has already been added!
               </Typography>
             )}
             {amountError && (
-              <Typography component="p" sx={{ color: "red" }}>
+              <Typography component="p" sx={{ color: "red" }} align="center">
                 Contribution or bill cannot exceed total bill
+              </Typography>
+            )}
+            {negativeValError && (
+              <Typography component="p" sx={{ color: "red" }} align="center">
+                Negative values are not acceptable
               </Typography>
             )}
           </Box>

@@ -1,4 +1,5 @@
 import { Box, Button, Typography } from "@mui/material";
+import { Link } from "react-router-dom";
 
 export default function AppIntro() {
     return (
@@ -12,7 +13,7 @@ export default function AppIntro() {
                 and family members. Keep financial transactions transparent
                 and organized, ensuring a stress-free experience for all.
             </Typography>
-            <Button variant="contained" sx={{px:5, py:2}}>Sign up</Button>
+            <Button component={Link} to="/signup" variant="contained" sx={{px:5, py:2}}>Sign up</Button>
         </Box>
     )
 }

@@ -6,7 +6,8 @@ import {
   Modal,
   Typography,
 } from "@mui/material";
-import { useParams } from "react-router";
+import { useSelector } from "react-redux";
+import { authSelector } from "../../store/authSlice";
 const style = {
   position: "absolute",
   top: "50%",
@@ -27,7 +28,7 @@ export default function ExpenseReport({
   expenseDetails,
   imageSrc,
 }) {
-  const param = useParams();
+  const userAuth = useSelector(authSelector);
   return (
     <Modal open={open}>
       <Container component="main" maxwidth="xs" sx={style}>
@@ -46,7 +47,7 @@ export default function ExpenseReport({
             {expenseDetails.participants.map((expense) => {
               return (
                 <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  { expense.id === param.userId? 'You': expense?.name  } ordered for {expense.bill}{" "}
+                  { expense.id === userAuth.id? 'You': expense?.name  } ordered for {expense.bill}{" "}
                   {expenseDetails.currency} and paid {expense.contribution}{" "}
                   {expenseDetails.currency}
                 </Typography>
@@ -58,9 +59,9 @@ export default function ExpenseReport({
             {report.map((expense) => {
               return (
                 <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  {expense.payerId === param.userId ? 'You owe': expense?.payerName + ' owes'}{" "}
+                  {expense.payerId === userAuth.id ? 'You owe': expense?.payerName + ' owes'}{" "}
                   {expense.debt} {expenseDetails.currency} to{" "}
-                  {expense.payeeId === param.userId? 'You': expense.payeeName}
+                  {expense.payeeId === userAuth.id? 'You': expense.payeeName}
                 </Typography>
               );
             })}

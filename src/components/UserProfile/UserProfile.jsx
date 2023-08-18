@@ -1,7 +1,4 @@
-import {
-  useNavigate,
-  useParams,
-} from "react-router";
+import { useNavigate } from "react-router";
 import {
   Box,
   Button,
@@ -22,6 +19,9 @@ import {
   fetchExpenseList,
   fetchUserData,
 } from "../../Utilities/FirebaseUtilities";
+import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+import { authSelector } from "../../store/authSlice";
 
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
@@ -29,20 +29,33 @@ export default function UserProfile() {
   const userOwes = settlementRecord.filter(
     (user) => user.payerName === `${userData.firstName} ${userData.lastName}`
   );
+  const userOwesExactlyOne = userOwes.filter((user, i, arr) => {
+    return (
+      arr.filter((record) => record.expenseId === user.expenseId).length < 2
+    );
+  });
+  console.log(userOwesExactlyOne);
+  const userOwesMultipleInOneExpense = userOwes.filter((user, i, arr) => {
+    return (
+      arr.filter((record) => record.expenseId === user.expenseId).length > 1
+    );
+  });
+  console.log(userOwesMultipleInOneExpense);
   const userIsOwed = settlementRecord.filter(
     (user) => user.payeeName === `${userData.firstName} ${userData.lastName}`
   );
   const navigate = useNavigate();
-  const params = useParams();
+  const userAuth = useSelector(authSelector);
 
   useEffect(() => {
-    if (!userData) {
-      onAuthStateChanged(auth, (user) => {
-        navigate(`/user/${user.uid}`);
-      });
-    }
+    // if (!userData) {
+    //   onAuthStateChanged(auth, (user) => {
+    //     if (user) navigate(`/user`);
+    //   });
+    // }
 
-    fetchExpenseList(params).then((listOfExpenses) => {
+    if (!userAuth) return;
+    fetchExpenseList(userAuth).then((listOfExpenses) => {
       listOfExpenses.forEach((expense) => {
         const transaction = [];
         const payers = expense.participants.filter(
@@ -55,7 +68,7 @@ export default function UserProfile() {
         setSettlementRecord((prevState) => [...prevState, ...transaction]);
       });
     });
-    fetchUserData(params).then((userData) => {
+    fetchUserData(userAuth).then((userData) => {
       setUserData(userData);
     });
   }, []);
@@ -83,7 +96,6 @@ export default function UserProfile() {
       );
       const updatedRecord = settlementRecord.slice();
       updatedRecord.splice(recordToBeSettled, 1);
-      setSettlementRecord([...updatedRecord]);
       const payerRef = doc(db, "users-db", userId);
       const payeeRef = doc(db, "users-db", payeeId);
       const payerSnap = await getDoc(payerRef);
@@ -100,97 +112,88 @@ export default function UserProfile() {
       await updateDoc(payeeRef, {
         expenses: updatedPayeeExpense,
       });
+      setSettlementRecord([...updatedRecord]);
     }
+    toast.success("Debt settled succesfully!");
   };
 
   return (
     <Box sx={{ mx: "5%", mt: 5 }}>
-      {userData? (
+      {userData ? (
         <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
           Welcome, {userData.firstName} {userData.lastName}
         </Typography>
-      ): <Skeleton variant="rectangular" animation="wave" sx={{width:300, mx:'auto', mb:10}}/>}
-      <Paper elevation={3} sx={{ display:'flex', justifyContent:'center', width:'60%', mx:'auto' }}>
-      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-      <Typography align='center' color="text.secondary" component="h2" variant="h6">
-        Your outstanding debts
-      </Typography>
-        {userOwes.map((user) => {
-          return (
-            <ListItem
-              secondaryAction={
-                <Button
-                  onClick={() =>
-                    settleExpense(user.expenseId, user.payerId, user.payeeId)
-                  }
-                >
-                  Settle
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List>
-      <Divider orientation="vertical" flexItem/>
-      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-      <Typography align='center' color="text.secondary" component="h2" variant="h6">
-        Debts owed to you
-      </Typography>
-        {userIsOwed.map((user) => {
-          return (
-            <ListItem alignItems="center">
-              <ListItemText
-                align="center" primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List>
+      ) : (
+        <Skeleton
+          variant="rectangular"
+          animation="wave"
+          sx={{ width: 300, mx: "auto", mb: 10 }}
+        />
+      )}
+      <Paper
+        elevation={3}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          width: "60%",
+          mx: "auto",
+        }}
+      >
+        <List
+          sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}
+        >
+          <Typography
+            align="center"
+            color="text.secondary"
+            component="h2"
+            variant="h6"
+          >
+            Your outstanding debts
+          </Typography>
+          {userOwesExactlyOne.map((user) => {
+            return (
+              <ListItem
+                secondaryAction={
+                  <Button
+                    onClick={() =>
+                      settleExpense(user.expenseId, user.payerId, user.payeeId)
+                    }
+                  >
+                    Settle
+                  </Button>
+                }
+              >
+                <ListItemText
+                  primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
+                />
+              </ListItem>
+            );
+          })}
+        </List>
+        <Divider orientation="vertical" flexItem />
+        <List
+          sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}
+        >
+          <Typography
+            align="center"
+            color="text.secondary"
+            component="h2"
+            variant="h6"
+          >
+            Debts owed to you
+          </Typography>
+          {userIsOwed.map((user) => {
+            return (
+              <ListItem alignItems="center">
+                <ListItemText
+                  align="center"
+                  primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
+                />
+              </ListItem>
+            );
+          })}
+        </List>
       </Paper>
-      {/* <Typography component="h2" variant="h5">
-        Your outstanding debts
-      </Typography> */}
-
-      {/* <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-        {userOwes.map((user) => {
-          return (
-            <ListItem
-              secondaryAction={
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    settleExpense(user.expenseId, user.payerId, user.payeeId)
-                  }
-                >
-                  Settle
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List> */}
-      {/* <Typography component="h2" variant="h5">
-        Debts owed to you
-      </Typography> */}
-      {/* <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-        {userIsOwed.map((user) => {
-          return (
-            <ListItem>
-              <ListItemText
-                primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List> */}
     </Box>
   );
 }

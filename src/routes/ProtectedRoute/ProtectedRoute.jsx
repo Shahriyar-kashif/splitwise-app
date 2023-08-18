@@ -10,6 +10,7 @@ export default function ProtectedRoute() {
   const navigate = useNavigate();
 
   useEffect(() => {
+    console.log('Protected runs?')
     onAuthStateChanged(auth, (user) => {
       if (user) {
         dispatch(authorizeUser({id:user.uid}));

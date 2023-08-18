@@ -1,9 +1,10 @@
 import { doc, getDoc } from "@firebase/firestore";
 import { db } from "../firebase/firebase";
 
-export const fetchExpenseList = async (params) => {
+export const fetchExpenseList = async (user) => {
     console.log("start1");
-    const docRef = doc(db, "users-db", params.userId);
+    if (!user) return;
+    const docRef = doc(db, "users-db", user?.id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
       const userData = docSnap.data();
@@ -24,12 +25,13 @@ export const fetchExpenseList = async (params) => {
     }
   };
 
-  export const fetchUserData = async (params) => {
+  export const fetchUserData = async (user) => {
     // const usersSnapshot = await getDocs(collection(db, "users-db"));
     // const users = [];
   //   usersSnapshot.forEach((doc) => users.push(doc.data()));
   //   return users;
-    const userId = params.userId;
+    if (!user) return;
+    const userId = user?.id;
     const userRef = doc(db, "users-db", userId);
     const userSnap = await getDoc(userRef);
     if (userSnap.exists()) {

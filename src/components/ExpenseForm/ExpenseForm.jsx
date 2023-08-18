@@ -28,8 +28,8 @@ import {
   updateDoc,
   doc,
 } from "@firebase/firestore";
-import { useParams } from "react-router";
 import { fetchUserData } from "../../Utilities/FirebaseUtilities";
+import { toast } from "react-toastify";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -58,6 +58,7 @@ const currencies = [
 export default function ExpenseForm() {
   const [openModal, setOpenModal] = useState(false);
   const [disable, setDisable] = useState(true);
+  const [disableFormButton, setDisableFormButton] = useState(false);
   const [currency, setCurrency] = useState("");
   const [uploadedImage, setUploadedImage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(false);
@@ -68,12 +69,12 @@ export default function ExpenseForm() {
   const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
-  const params = useParams();
+  console.log(userAuth);
 
   useEffect(() => {
-    fetchUserData(params).then(userData => {
+    fetchUserData(userAuth).then(userData => {
         setUserData(userData);
-    })
+    }) // add catch block
     return () => {
       dispatch(clearParticpants());
     };
@@ -168,24 +169,49 @@ export default function ExpenseForm() {
       setErrorMessage(true);
       return;
     } else setErrorMessage(false);
+    setDisableFormButton(true);
     // get reference to expense collection and add the expense form data as a doc there
     const expenseRef = collection(db, "expense");
-    const expenseDocRef = await addDoc(expenseRef, expense);
-    // get reference to current user's doc in db
-    const userDocRef = doc(db, "users-db", userAuth.id);
-    await updateDoc(expenseDocRef, {
-      id: expenseDocRef.id,
-    });
-    // add current expense doc's id to the user's doc in an array
-    await updateDoc(userDocRef, {
-      expenses: arrayUnion(expenseDocRef.id),
-    });
-    // do the above for all participants in the expense as well
-    participants.forEach(async (participant) => {
-      await updateDoc(doc(db, "users-db", participant.id), {
-        expenses: arrayUnion(expenseDocRef.id),
-      });
-    });
+    try{
+        const expenseDocRef = await addDoc(expenseRef, expense);
+        // get reference to current user's doc in db
+        const userDocRef = doc(db, "users-db", userAuth.id);
+        await updateDoc(expenseDocRef, {
+          id: expenseDocRef.id,
+        });
+        // add current expense doc's id to the user's doc in an array
+        await updateDoc(userDocRef, {
+          expenses: arrayUnion(expenseDocRef.id),
+        });
+        // do the above for all participants in the expense as well
+        participants.forEach(async (participant) => {
+          await updateDoc(doc(db, "users-db", participant.id), {
+            expenses: arrayUnion(expenseDocRef.id),
+          });
+        });
+    } catch(error) {
+        console.log(error);
+    } finally {
+        setDisableFormButton(false);
+    }
+    // const expenseDocRef = await addDoc(expenseRef, expense);
+    // // get reference to current user's doc in db
+    // const userDocRef = doc(db, "users-db", userAuth.id);
+    // await updateDoc(expenseDocRef, {
+    //   id: expenseDocRef.id,
+    // });
+    // // add current expense doc's id to the user's doc in an array
+    // await updateDoc(userDocRef, {
+    //   expenses: arrayUnion(expenseDocRef.id),
+    // });
+    // // do the above for all participants in the expense as well
+    // participants.forEach(async (participant) => {
+    //   await updateDoc(doc(db, "users-db", participant.id), {
+    //     expenses: arrayUnion(expenseDocRef.id),
+    //   });
+    // });
+    e.target.reset();
+    toast.success('Expense added successfully!');
   };
 
   return (
@@ -211,6 +237,7 @@ export default function ExpenseForm() {
               type="date"
               name="date"
               autoComplete="current-date"
+              inputProps={{ max:new Date().toISOString().split('T')[0] }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -255,7 +282,7 @@ export default function ExpenseForm() {
               fullWidth
               id="user-bill"
               inputRef={userBillRef}
-              label="Add your bill"
+              label="Add your order bill"
               type="number"
               inputProps={{ min:0 }}
               name="userBill"
@@ -268,7 +295,7 @@ export default function ExpenseForm() {
               required
               fullWidth
               id="user-contribution"
-              label="Add your contribution"
+              label="Add your payment"
               inputRef={userContributionRef}
               type="number"
               inputProps={{ min:0 }}
@@ -306,6 +333,7 @@ export default function ExpenseForm() {
           fullWidth
           variant="contained"
           sx={{ mt: 3, mb: 2 }}
+          disabled={disableFormButton}
         >
           Add Expense
         </Button>

@@ -14,10 +14,26 @@ import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
+import { toast } from "react-toastify";
 
 export default function SignupForm() {
   const [submissionError, setSubmissionError] = useState(null);
+  const [disableState, setDisableState] = useState(false);
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
+  const [email, setEmail] = useState("");
   const navigate = useNavigate();
+
+  const handleEmailChange = () => {
+
+  }
+  
+  const handleInputChange = (e, setChange) => {
+    const value = e.target.value;
+    console.log(/^[a-zA-Z]*$/.test(value))
+    if(/^[a-zA-Z]*$/.test(value) || value === "")
+    setChange(value);
+  }
 
   const handleSubmit = (e) => {
     e.preventDefault();
@@ -25,6 +41,7 @@ export default function SignupForm() {
     const email = formData.get("email");
     const password = formData.get("password");
     const [firstName, lastName] = [formData.get('firstName'), formData.get('lastName')];
+    setDisableState(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
         const user = userCredentials.user;
@@ -34,14 +51,19 @@ export default function SignupForm() {
           firstName: firstName,
           lastName: lastName,
         });
-
-        navigate(`/user/${user.uid}`);
+        toast.success("Sign up Successful! You're Now Logged In")
+        navigate(`/user`);
       })
       .catch((error) => {
-        setSubmissionError(error.message);
-      });
+        if (error.message.includes('auth/weak-password')) setSubmissionError('Password should be at least 6 characters');
+        else if (error.message.includes('auth/email-already-in-use')) setSubmissionError('Email already registered')
+        else  setSubmissionError(error.message);
+      })
+      .finally (() => {
+        setDisableState(false);
+      })
   };
-  
+
   return (
     <Container component="main" maxWidth="xs">
       <CssBaseline />
@@ -63,6 +85,8 @@ export default function SignupForm() {
                 name="firstName"
                 required
                 fullWidth
+                value={firstName}
+                onChange={(e) => {handleInputChange(e, setFirstName)}}
                 id="firstName"
                 label="First Name"
                 autoFocus
@@ -73,6 +97,8 @@ export default function SignupForm() {
                 required
                 fullWidth
                 id="lastName"
+                value={lastName}
+                onChange={(e) => {handleInputChange(e, setLastName)}}
                 label="Last Name"
                 name="lastName"
                 autoComplete="family-name"
@@ -82,6 +108,8 @@ export default function SignupForm() {
               <TextField
                 required
                 fullWidth
+                type="email"
+                value={email}
                 id="email"
                 label="Email Address"
                 name="email"
@@ -105,6 +133,7 @@ export default function SignupForm() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={disableState}
           >
             Sign up
           </Button>

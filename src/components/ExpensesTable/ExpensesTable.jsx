@@ -9,13 +9,14 @@ import {
   Box,
 } from "@mui/material";
 import { storage } from "../../firebase/firebase";
-import { useParams } from "react-router";
 import { useEffect, useState } from "react";
 import ExpenseReport from "../ExpenseReport/ExpenseReport";
 import { getDownloadURL, ref } from "@firebase/storage";
 import { settleDebt } from "../../Utilities/ExpenseSettlementUtil";
 import { fetchExpenseList } from "../../Utilities/FirebaseUtilities";
 import SkeletonUI from "../SkeletonUI/SkeletonUI";
+import { useSelector } from "react-redux";
+import { authSelector } from "../../store/authSlice";
 
 export default function ExpensesTable() {
   const [report, setReport] = useState([]);
@@ -24,10 +25,11 @@ export default function ExpensesTable() {
   const [imageUrl, setImageUrl] = useState(null);
   const [isLoading, setIsLoading] = useState(true);
   const [expenseList, setExpenseList] = useState([]);
-  const params = useParams();
+  const userAuth = useSelector(authSelector);
 
   useEffect(() => {
-    fetchExpenseList(params)
+    if (!userAuth) return;
+    fetchExpenseList(userAuth)
       .then((expenseList) => {
         setExpenseList([...expenseList]);
         setIsLoading(false);

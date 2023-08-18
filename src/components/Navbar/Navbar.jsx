@@ -49,7 +49,7 @@ export default function Navbar(props) {
             <ListItem disablePadding>
               <ListItemButton
                 component={Link}
-                to={`/user/${userAuth.id}`}
+                to={`/user`}
                 sx={{ textAlign: "center" }}
               >
                 {userAuth && <ListItemText primary="Dashboard" />}
@@ -58,7 +58,7 @@ export default function Navbar(props) {
             <ListItem disablePadding>
               <ListItemButton
                 component={Link}
-                to={`/user/${userAuth.id}/all-expenses`}
+                to={`/user/all-expenses`}
                 sx={{ textAlign: "center" }}
               >
                 {userAuth && <ListItemText primary="All expenses" />}
@@ -67,7 +67,7 @@ export default function Navbar(props) {
             <ListItem disablePadding>
               <ListItemButton
                 component={Link}
-                to={`/user/${userAuth.id}/add-expense`}
+                to={`/user/add-expense`}
                 sx={{ textAlign: "center" }}
               >
                 {userAuth && <ListItemText primary="Add Expense" />}
@@ -155,21 +155,21 @@ export default function Navbar(props) {
               <>
                 <Button
                   component={Link}
-                  to={`/user/${userAuth.id}`}
+                  to={`/user`}
                   sx={{ color: "#fff" }}
                 >
                   Dashboard
                 </Button>
                 <Button
                   component={Link}
-                  to={`/user/${userAuth.id}/all-expenses`}
+                  to={`/user/all-expenses`}
                   sx={{ color: "#fff" }}
                 >
                   All Expenses
                 </Button>
                 <Button
                   component={Link}
-                  to={`/user/${userAuth.id}/add-expense`}
+                  to={`/user/add-expense`}
                   sx={{ color: "#fff" }}
                 >
                   Add Expense

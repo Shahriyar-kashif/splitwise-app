@@ -12,9 +12,11 @@ import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { Link as RouterLink, useNavigate } from "react-router-dom";
 import { auth } from "../../firebase/firebase";
+import { toast } from "react-toastify";
 
 export default function SigninForm() {
   const [submissionError, setSubmissionError] = useState(null);
+  const [disableState, setDisableState] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = (e) => {
@@ -22,15 +24,23 @@ export default function SigninForm() {
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email");
     const password = formData.get("password");
+    setDisableState(true);
     signInWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
         const user = userCredentials.user;
         if (submissionError) setSubmissionError(null);
-        navigate(`/user/${user.uid}`);
+        toast.success('Successfully logged in!');
+        navigate(`/user`);
       })
       .catch((error) => {
-        setSubmissionError(error.message);
-      });
+        console.log(error.message)
+        if (error.message.includes('auth/user-not-found')) setSubmissionError('Email doesnt exist!');
+        else if (error.message.includes('auth/wrong-password')) setSubmissionError('Incorrect password!');
+        else setSubmissionError(error.message);
+      })
+      .finally(() => {
+        setDisableState(false);
+      })
   };
 
   return (
@@ -52,6 +62,7 @@ export default function SigninForm() {
                 name="email"
                 margin="normal"
                 required
+                type="email"
                 fullWidth
                 id="email"
                 label="Email Address"
@@ -73,6 +84,7 @@ export default function SigninForm() {
             fullWidth
             variant="contained"
             sx={{ mt: 3, mb: 2 }}
+            disabled={disableState}
           >
             Sign in
           </Button>
