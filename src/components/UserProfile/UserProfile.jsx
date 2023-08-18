@@ -26,6 +26,7 @@ import { authSelector } from "../../store/authSlice";
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
   const [settlementRecord, setSettlementRecord] = useState([]);
+  console.log(auth.currentUser);
   const userOwes = settlementRecord.filter(
     (user) => user.payerName === `${userData.firstName} ${userData.lastName}`
   );
@@ -48,12 +49,6 @@ export default function UserProfile() {
   const userAuth = useSelector(authSelector);
 
   useEffect(() => {
-    // if (!userData) {
-    //   onAuthStateChanged(auth, (user) => {
-    //     if (user) navigate(`/user`);
-    //   });
-    // }
-
     if (!userAuth) return;
     fetchExpenseList(userAuth).then((listOfExpenses) => {
       listOfExpenses.forEach((expense) => {
@@ -72,6 +67,36 @@ export default function UserProfile() {
       setUserData(userData);
     });
   }, []);
+
+  const handleMultipleSettlement = async (expenseId) => {
+    const recordsToBeSettled = settlementRecord.filter(
+      (record) => record.expenseId === expenseId
+    );
+    console.log(recordsToBeSettled);
+    const userId = recordsToBeSettled[0].payerId;
+    const payerRef = doc(db, "users-db", userId);
+    const payerSnap = await getDoc(payerRef);
+    const updatedPayerExpense = payerSnap
+      .data()
+      .expenses.filter((id) => id !== expenseId);
+    await updateDoc(payerRef, {
+      expenses: updatedPayerExpense,
+    });
+    recordsToBeSettled.forEach(async (record) => {
+      const payeeRef = doc(db, "users-db", record.payeeId);
+      const payeeSnap = await getDoc(payeeRef);
+      const updatedPayeeExpense = payeeSnap
+        .data()
+        .expenses.filter((id) => id !== expenseId);
+      await updateDoc(payeeRef, {
+        expenses: updatedPayeeExpense,
+      });
+    });
+    const updatedRecord = settlementRecord.filter(
+      (record) => record.expenseId !== expenseId
+    );
+    setSettlementRecord([...updatedRecord]);
+  };
 
   const settleExpense = async (expenseId, userId, payeeId) => {
     const debtsPerExpense = settlementRecord.filter(
@@ -119,17 +144,9 @@ export default function UserProfile() {
 
   return (
     <Box sx={{ mx: "5%", mt: 5 }}>
-      {userData ? (
-        <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
-          Welcome, {userData.firstName} {userData.lastName}
-        </Typography>
-      ) : (
-        <Skeleton
-          variant="rectangular"
-          animation="wave"
-          sx={{ width: 300, mx: "auto", mb: 10 }}
-        />
-      )}
+      <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
+        Welcome, {auth.currentUser.displayName}
+      </Typography>
       <Paper
         elevation={3}
         sx={{
@@ -169,6 +186,26 @@ export default function UserProfile() {
               </ListItem>
             );
           })}
+          {userOwesMultipleInOneExpense &&
+            userOwesMultipleInOneExpense.map((user, i, arr) => {
+              return (
+                <ListItem>
+                  <ListItemText
+                    primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
+                    sx={{ display: "inline" }}
+                  />
+                  {arr.length - 1 === i && (
+                    <Button
+                      onClick={() => {
+                        handleMultipleSettlement(user.expenseId);
+                      }}
+                    >
+                      Settle
+                    </Button>
+                  )}
+                </ListItem>
+              );
+            })}
         </List>
         <Divider orientation="vertical" flexItem />
         <List

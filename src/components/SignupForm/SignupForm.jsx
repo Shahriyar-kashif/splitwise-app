@@ -8,7 +8,7 @@ import {
   Button,
   Link,
 } from "@mui/material";
-import { createUserWithEmailAndPassword } from "firebase/auth";
+import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { auth, db } from "../../firebase/firebase";
 import { Link as RouterLink } from "react-router-dom";
 import { useState } from "react";
@@ -21,13 +21,8 @@ export default function SignupForm() {
   const [disableState, setDisableState] = useState(false);
   const [firstName, setFirstName] = useState("");
   const [lastName, setLastName] = useState("");
-  const [email, setEmail] = useState("");
   const navigate = useNavigate();
 
-  const handleEmailChange = () => {
-
-  }
-  
   const handleInputChange = (e, setChange) => {
     const value = e.target.value;
     console.log(/^[a-zA-Z]*$/.test(value))
@@ -52,6 +47,7 @@ export default function SignupForm() {
           lastName: lastName,
         });
         toast.success("Sign up Successful! You're Now Logged In")
+        updateProfile(auth.currentUser, {displayName: `${firstName} ${lastName}`});
         navigate(`/user`);
       })
       .catch((error) => {
@@ -109,7 +105,6 @@ export default function SignupForm() {
                 required
                 fullWidth
                 type="email"
-                value={email}
                 id="email"
                 label="Email Address"
                 name="email"
