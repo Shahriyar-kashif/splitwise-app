@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
+import { Suspense } from "react";
 const style = {
   position: "absolute",
   top: "50%",
@@ -47,9 +48,9 @@ export default function ExpenseReport({
             {expenseDetails.participants.map((expense) => {
               return (
                 <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  { expense.id === userAuth.id? 'You': expense?.name  } ordered for {expense.bill}{" "}
-                  {expenseDetails.currency} and paid {expense.contribution}{" "}
-                  {expenseDetails.currency}
+                  {expense.id === userAuth.id ? "You" : expense?.name} ordered
+                  for {expense.bill} {expenseDetails.currency} and paid{" "}
+                  {expense.contribution} {expenseDetails.currency}
                 </Typography>
               );
             })}
@@ -59,22 +60,42 @@ export default function ExpenseReport({
             {report.map((expense) => {
               return (
                 <Typography color="text.secondary" sx={{ mb: 1 }}>
-                  {expense.payerId === userAuth.id ? 'You owe': expense?.payerName + ' owes'}{" "}
+                  {expense.payerId === userAuth.id
+                    ? "You owe"
+                    : expense?.payerName + " owes"}{" "}
                   {expense.debt} {expenseDetails.currency} to{" "}
-                  {expense.payeeId === userAuth.id? 'You': expense.payeeName}
+                  {expense.payeeId === userAuth.id ? "You" : expense.payeeName}
                 </Typography>
               );
             })}
             <Typography component="h2" variant="h5">
               Image
             </Typography>
+
             {expenseDetails.image ? (
-              <Box component="img" src={`${imageSrc}`} alt="picture of bill" />
+              <Container
+                component="div"
+                sx={{
+                  height: "250px",
+                  width: "400px",
+                  border: "solid 1px green",
+                }}
+              >
+                <Suspense fallback={<p>Loading</p>}>
+                  <Box
+                    component="img"
+                    src={`${imageSrc}`}
+                    alt="picture of bill"
+                    sx={{ width: "100%", height: "100%" }}
+                  />
+                </Suspense>
+              </Container>
             ) : (
               <Typography color="text.secondary" component="p" sx={{ mb: 2 }}>
                 No image found
               </Typography>
             )}
+
             <Button
               variant="contained"
               onClick={() => {

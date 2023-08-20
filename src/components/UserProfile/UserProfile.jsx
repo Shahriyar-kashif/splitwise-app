@@ -14,11 +14,11 @@ import { doc, getDoc, updateDoc } from "@firebase/firestore";
 import { auth, db } from "../../firebase/firebase";
 import { onAuthStateChanged } from "@firebase/auth";
 import { useEffect, useState } from "react";
-import { settleDebt } from "../../Utilities/ExpenseSettlementUtil";
+import { settleDebt } from "../../Utilities/expenseSettlementUtil";
 import {
   fetchExpenseList,
   fetchUserData,
-} from "../../Utilities/FirebaseUtilities";
+} from "../../Utilities/firebaseUtilities";
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
@@ -66,7 +66,7 @@ export default function UserProfile() {
     fetchUserData(userAuth).then((userData) => {
       setUserData(userData);
     });
-  }, []);
+  }, [userAuth]);
 
   const handleMultipleSettlement = async (expenseId) => {
     const recordsToBeSettled = settlementRecord.filter(
@@ -145,7 +145,7 @@ export default function UserProfile() {
   return (
     <Box sx={{ mx: "5%", mt: 5 }}>
       <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
-        Welcome, {auth.currentUser.displayName}
+        Welcome, {auth.currentUser?.displayName}
       </Typography>
       <Paper
         elevation={3}
@@ -194,7 +194,7 @@ export default function UserProfile() {
                     primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
                     sx={{ display: "inline" }}
                   />
-                  {arr.length - 1 === i && (
+                  {((arr.length - 1 === i) || (user.expenseId !== arr[i+1].expenseId )) && (
                     <Button
                       onClick={() => {
                         handleMultipleSettlement(user.expenseId);

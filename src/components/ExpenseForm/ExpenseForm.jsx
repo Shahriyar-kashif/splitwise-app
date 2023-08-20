@@ -28,8 +28,13 @@ import {
   updateDoc,
   doc,
 } from "@firebase/firestore";
-import { fetchUserData } from "../../Utilities/FirebaseUtilities";
+import {
+  fetchUserData,
+  uploadImageToDB,
+} from "../../Utilities/firebaseUtilities";
 import { toast } from "react-toastify";
+import { calculateCumulativeExpense } from "../../Utilities/participantsValidationsUtils";
+import { isExpenseAlreadySettled, submitExpenseToDB } from "../../Utilities/expenseFormUtils";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -63,18 +68,18 @@ export default function ExpenseForm() {
   const [uploadedImage, setUploadedImage] = useState(null);
   const [errorMessage, setErrorMessage] = useState(false);
   const [userData, setUserData] = useState(null);
+  const [settlementError, setSettlementError] = useState(false);
   const participants = useSelector(participantsSelector);
   const totalBillRef = useRef();
   const userBillRef = useRef();
   const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
-  console.log(userAuth);
 
   useEffect(() => {
-    fetchUserData(userAuth).then(userData => {
-        setUserData(userData);
-    }) // add catch block
+    fetchUserData(userAuth).then((userData) => {
+      setUserData(userData);
+    }); // add catch block
     return () => {
       dispatch(clearParticpants());
     };
@@ -104,44 +109,13 @@ export default function ExpenseForm() {
     setUploadedImage(uploadedFile);
   };
 
-  const getTotalExpense = (
-    participants,
-    currentUserBill,
-    currentUserContribution
-  ) => {
-    if (participants.length > 0) {
-      const totalBill = participants.reduce((accum, current) => {
-        return {
-          bill: Number(accum.bill) + Number(current.bill),
-          contribution:
-            Number(accum.contribution) + Number(current.contribution),
-        };
-      });
-      return {
-        bill: totalBill.bill + currentUserBill,
-        contribution: totalBill.contribution + currentUserContribution,
-      };
-    } else {
-      return {
-        bill: currentUserBill,
-        contribution: currentUserContribution,
-      };
-    }
-  };
-
   const handleExpenseAddition = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const userContribution = Number(formData.get("userContribution")) || 0;
     const userBill = Number(formData.get("userBill")) || 0;
     const totalBill = Number(formData.get("totalBill"));
-    const imagePath = uploadedImage
-      ? `images/${uploadedImage.name + v4()}`
-      : null;
-    const imageRef = imagePath && ref(storage, `${imagePath}`);
-    if (imageRef) {
-      uploadBytes(imageRef, uploadedImage).then(() => {});
-    }
+    const imagePath = uploadImageToDB(uploadedImage);
     const currentUser = {
       id: userAuth.id,
       email: userData?.email,
@@ -157,7 +131,7 @@ export default function ExpenseForm() {
       image: imagePath ?? null,
       participants: [currentUser, ...participants],
     };
-    const totalExpense = getTotalExpense(
+    const totalExpense = calculateCumulativeExpense(
       participants,
       userBill,
       userContribution
@@ -169,49 +143,18 @@ export default function ExpenseForm() {
       setErrorMessage(true);
       return;
     } else setErrorMessage(false);
+    if (
+      userBill === userContribution &&
+      isExpenseAlreadySettled(participants)
+    ) {
+      setSettlementError(true);
+      e.target.reset();
+      dispatch(clearParticpants());
+      return;
+    } else setSettlementError(false);
     setDisableFormButton(true);
-    // get reference to expense collection and add the expense form data as a doc there
-    const expenseRef = collection(db, "expense");
-    try{
-        const expenseDocRef = await addDoc(expenseRef, expense);
-        // get reference to current user's doc in db
-        const userDocRef = doc(db, "users-db", userAuth.id);
-        await updateDoc(expenseDocRef, {
-          id: expenseDocRef.id,
-        });
-        // add current expense doc's id to the user's doc in an array
-        await updateDoc(userDocRef, {
-          expenses: arrayUnion(expenseDocRef.id),
-        });
-        // do the above for all participants in the expense as well
-        participants.forEach(async (participant) => {
-          await updateDoc(doc(db, "users-db", participant.id), {
-            expenses: arrayUnion(expenseDocRef.id),
-          });
-        });
-    } catch(error) {
-        console.log(error);
-    } finally {
-        setDisableFormButton(false);
-    }
-    // const expenseDocRef = await addDoc(expenseRef, expense);
-    // // get reference to current user's doc in db
-    // const userDocRef = doc(db, "users-db", userAuth.id);
-    // await updateDoc(expenseDocRef, {
-    //   id: expenseDocRef.id,
-    // });
-    // // add current expense doc's id to the user's doc in an array
-    // await updateDoc(userDocRef, {
-    //   expenses: arrayUnion(expenseDocRef.id),
-    // });
-    // // do the above for all participants in the expense as well
-    // participants.forEach(async (participant) => {
-    //   await updateDoc(doc(db, "users-db", participant.id), {
-    //     expenses: arrayUnion(expenseDocRef.id),
-    //   });
-    // });
+    submitExpenseToDB(userAuth, participants, expense, setDisableFormButton);
     e.target.reset();
-    toast.success('Expense added successfully!');
   };
 
   return (
@@ -237,7 +180,7 @@ export default function ExpenseForm() {
               type="date"
               name="date"
               autoComplete="current-date"
-              inputProps={{ max:new Date().toISOString().split('T')[0] }}
+              inputProps={{ max: new Date().toISOString().split("T")[0] }}
             />
           </Grid>
           <Grid item xs={12} sm={6}>
@@ -247,7 +190,7 @@ export default function ExpenseForm() {
               inputRef={totalBillRef}
               fullWidth
               id="total-bill"
-              inputProps={{min:0}}
+              inputProps={{ min: 0 }}
               label="Total Bill"
               type="number"
               onChange={handleDisable}
@@ -284,7 +227,7 @@ export default function ExpenseForm() {
               inputRef={userBillRef}
               label="Add your order bill"
               type="number"
-              inputProps={{ min:0 }}
+              inputProps={{ min: 0 }}
               name="userBill"
               autoComplete="current-bill"
             />
@@ -298,7 +241,7 @@ export default function ExpenseForm() {
               label="Add your payment"
               inputRef={userContributionRef}
               type="number"
-              inputProps={{ min:0 }}
+              inputProps={{ min: 0 }}
               name="userContribution"
               autoComplete="current-contribution"
             />
@@ -338,8 +281,23 @@ export default function ExpenseForm() {
           Add Expense
         </Button>
         {errorMessage && (
-          <Typography variant="p" sx={{ color: "red" }}>
+          <Typography
+            component="p"
+            variant="p"
+            sx={{ color: "red" }}
+            align="center"
+          >
             Bills and Contributions don't add up to total bill
+          </Typography>
+        )}
+        {settlementError && (
+          <Typography
+            component="p"
+            variant="p"
+            sx={{ color: "red" }}
+            align="center"
+          >
+            An already settled expense cannot be added
           </Typography>
         )}
       </Box>

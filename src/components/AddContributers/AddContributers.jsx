@@ -1,3 +1,4 @@
+import SkeletonUI from "../SkeletonUI/SkeletonUI";
 import {
   Box,
   Select,
@@ -18,10 +19,10 @@ import {
   addParticipants,
   participantsSelector,
 } from "../../store/participantsSlice";
-import SkeletonUI from "../SkeletonUI/SkeletonUI";
-import { fetchUserData } from "../../Utilities/FirebaseUtilities";
+import { fetchUserData, fetchUsers } from "../../Utilities/firebaseUtilities";
 import { toast } from "react-toastify";
 import { authSelector } from "../../store/authSlice";
+import { isExpenseValid, isParticipantAlreadyAdded } from "../../Utilities/participantsValidationsUtils";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -68,21 +69,9 @@ export default function AddContributers({
   const signedInUserBill = Number(userBill) || 0;
   const signedInUserContribution = Number(userContribution) || 0;
   const userAuth = useSelector(authSelector);
-  console.log(userAuth);
-
-  const fetchUsers = async () => {
-    const usersSnapshot = await getDocs(collection(db, "users-db"));
-    const users = [];
-    const userData = await fetchUserData(userAuth);
-    console.log(userData);
-    usersSnapshot.forEach((doc) => users.push(doc.data()));
-    const updatedUsers = users.filter((user) => user.email !== userData.email);
-    console.log(updatedUsers);
-    return updatedUsers;
-  };
 
   useEffect(() => {
-    fetchUsers()
+    fetchUsers(userAuth)
       .then((users) => {
         setUsers([...users]);
         setIsLoading(false);
@@ -97,51 +86,6 @@ export default function AddContributers({
     setEmail(event.target.value);
   };
 
-  const checkParticipantRepetition = (participants, email) => {
-    const repeatedParticipant = participants.find(
-      (participant) => participant.email === email
-    );
-    return repeatedParticipant;
-  };
-
-  const compareBillAndContribution = (
-    participants,
-    participantBill,
-    participantContribution
-  ) => {
-    const participantPayment = compareAmount(participants) || {
-      bill: 0,
-      contribution: 0,
-    };
-
-    return (
-      participantPayment.bill + participantBill + signedInUserBill >
-        totalBill ||
-      participantPayment.contribution +
-        participantContribution +
-        signedInUserContribution >
-        totalBill ||
-      participantContribution > totalBill ||
-      participantBill > totalBill
-    );
-  };
-
-  const compareAmount = (participants) => {
-    if (participants.length > 0) {
-      const totalBill = participants.reduce((accum, current) => {
-        return {
-          bill: Number(accum.bill) + Number(current.bill),
-          contribution:
-            Number(accum.contribution) + Number(current.contribution),
-        };
-      });
-      return {
-        bill: totalBill.bill,
-        contribution: totalBill.contribution,
-      };
-    }
-  };
-
   const handleParticipants = async () => {
     const [userEmail, userBill, userContribution] = [
       contributorRef.current.value,
@@ -153,12 +97,21 @@ export default function AddContributers({
     const matchedUser = query(usersRef, where("email", "==", userEmail));
     const userSnapShot = await getDocs(matchedUser);
 
-    if (checkParticipantRepetition(participants, userEmail)) {
+    if (isParticipantAlreadyAdded(participants, userEmail)) {
       setErrorMessage(true);
       return;
     } else setErrorMessage(false);
 
-    if (compareBillAndContribution(participants, userBill, userContribution)) {
+    if (
+      isExpenseValid(
+        participants,
+        userBill,
+        userContribution,
+        signedInUserBill,
+        signedInUserContribution,
+        totalBill
+      )
+    ) {
       setAmountError(true);
       return;
     } else setAmountError(false);
