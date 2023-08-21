@@ -47,7 +47,6 @@ export default function ExpenseReport({
               Bill Summary
             </Typography>
             {expenseDetails.participants.map((expense) => {
-              console.log(expense);
               return (
                 <Typography
                   color="text.secondary"
@@ -64,7 +63,6 @@ export default function ExpenseReport({
               Settlement Summary
             </Typography>
             {report.map((expense) => {
-              console.log(expense);
               return (
                 <Typography
                   color="text.secondary"
