@@ -136,6 +136,7 @@ export default function UserProfile() {
           {userOwes.map((user) => {
             return (
               <ListItem
+                key={user.payerId + user.payeeId + user.expenseId}
                 secondaryAction={
                   <Button
                     onClick={() =>
@@ -177,7 +178,10 @@ export default function UserProfile() {
           )}
           {userIsOwed.map((user) => {
             return (
-              <ListItem alignItems="center">
+              <ListItem
+                alignItems="center"
+                key={user.payerId + user.payeeId + user.expenseId}
+              >
                 <ListItemText
                   align="center"
                   primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
