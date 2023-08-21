@@ -31,7 +31,6 @@ export default function UserProfile() {
   );
   const navigate = useNavigate();
   const path = useParams();
-
   useEffect(() => {
     if (!userData) {
       onAuthStateChanged(auth, (user) => {

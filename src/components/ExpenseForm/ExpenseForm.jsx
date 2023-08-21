@@ -26,9 +26,10 @@ import {
   collection,
   updateDoc,
   doc,
-  getDoc,
+
 } from "@firebase/firestore";
 import { useLoaderData } from "react-router";
+
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -172,6 +173,7 @@ export default function ExpenseForm() {
     await updateDoc(expenseDocRef, {
         id: expenseDocRef.id,
     })
+
     // add current expense doc's id to the user's doc in an array
     await updateDoc(userDocRef, {
       expenses: arrayUnion(expenseDocRef.id),
