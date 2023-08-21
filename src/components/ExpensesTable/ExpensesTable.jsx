@@ -35,7 +35,6 @@ export default function ExpensesTable() {
         setIsLoading(false);
       })
       .catch((error) => {
-        console.log(error.message);
         setIsLoading(false);
       });
   }, []);

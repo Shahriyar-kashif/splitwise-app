@@ -25,7 +25,6 @@ export default function SignupForm() {
 
   const handleInputChange = (e, setChange) => {
     const value = e.target.value;
-    console.log(/^[a-zA-Z]*$/.test(value));
     if (/^[a-zA-Z]*$/.test(value) || value === "") setChange(value);
   };
 

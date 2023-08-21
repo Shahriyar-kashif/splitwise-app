@@ -42,10 +42,8 @@ export const fetchUsers = async (userAuth) => {
   const usersSnapshot = await getDocs(collection(db, "users-db"));
   const users = [];
   const userData = await fetchUserData(userAuth);
-  console.log(userData);
   usersSnapshot.forEach((doc) => users.push(doc.data()));
   const updatedUsers = users.filter((user) => user.email !== userData.email);
-  console.log(updatedUsers);
   return updatedUsers;
 };
 

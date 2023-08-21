@@ -42,7 +42,6 @@ export const settleDebt = (
 
   if (debt < credit) {
     payeesCopy[maxCreditInd].contribution -= debt;
-    console.log(payersCopy[maxDebtInd]);
     const newTransaction = {
       currency: currency,
       expenseId: id,

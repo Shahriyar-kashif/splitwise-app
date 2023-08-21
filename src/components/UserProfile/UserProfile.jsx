@@ -55,7 +55,6 @@ export default function UserProfile() {
     fetchUserData(userAuth).then((userData) => {
       setUserData(userData);
       const settlements = userData.settlements || [];
-      console.log(settlements);
       setAlreadySettled([...settlements]);
     });
   }, [userAuth]);

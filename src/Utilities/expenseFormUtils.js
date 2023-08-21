@@ -34,7 +34,7 @@ export const submitExpenseToDB = async (
     });
     toast.success("Expense added successfully!");
   } catch (error) {
-    console.log(error);
+    // console.log(error);
   } finally {
     setDisableFormButton(false);
   }

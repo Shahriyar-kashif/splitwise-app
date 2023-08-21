@@ -33,7 +33,6 @@ export default function SigninForm() {
         navigate(`/user`);
       })
       .catch((error) => {
-        console.log(error.message);
         if (error.message.includes("auth/user-not-found"))
           setSubmissionError("Email doesnt exist!");
         else if (error.message.includes("auth/wrong-password"))
