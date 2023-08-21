@@ -28,13 +28,13 @@ export default function SignupForm() {
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
         const user = userCredentials.user;
-        console.log(user);
         if (submissionError) setSubmissionError(null);
         setDoc(doc(db, "users-db", user.uid), {
           email: user.email,
           firstName: firstName,
           lastName: lastName,
         });
+
         navigate(`/user/${user.uid}`);
       })
       .catch((error) => {

@@ -15,7 +15,9 @@ import { store } from "./store/store";
 import Dashboard from "./routes/Dashboard/Dashboard";
 import AddExpense from "./routes/AddExpense/AddExpense";
 import { loader } from "./components/UserProfile/UserProfile";
-import {loader as contributorsLoader} from './components/AddFriend/AddContributers';
+import { loader as contributorsLoader } from "./components/AddContributers/AddContributers";
+import { loader as expenseListLoader } from "./components/ExpensesTable/ExpensesTable";
+import AllExpenses from "./routes/AllExpenses/AllExpenses";
 
 const router = createBrowserRouter([
   {
@@ -27,26 +29,31 @@ const router = createBrowserRouter([
         element: <Home />,
       },
       {
-        path:"/",
+        path: "/",
         element: <ProtectedRoute />,
         children: [
           {
             path: "/user/:userId",
             element: <User />,
-            children:[
+            children: [
               {
-                path:"/user/:userId",
-                element:<Dashboard />,
+                path: "/user/:userId",
+                element: <Dashboard />,
                 loader: loader,
               },
               {
-                path:"add-expense",
+                path: "add-expense",
                 element: <AddExpense />,
                 loader: contributorsLoader,
-              }
-            ]
+              },
+              {
+                path: "all-expenses",
+                element: <AllExpenses />,
+                loader: expenseListLoader,
+              },
+            ],
           },
-        ]
+        ],
       },
       {
         path: "/login",
@@ -60,11 +67,11 @@ const router = createBrowserRouter([
   },
 ]);
 ReactDOM.createRoot(document.getElementById("root")).render(
-  <React.StrictMode>
+  // <React.StrictMode>
     <Provider store={store}>
       <ThemeProvider theme={theme}>
         <RouterProvider router={router} />
       </ThemeProvider>
     </Provider>
-  </React.StrictMode>
+  // </React.StrictMode>
 );
