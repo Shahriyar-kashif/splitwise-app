@@ -47,7 +47,6 @@ export default function UserProfile() {
   );
   const navigate = useNavigate();
   const userAuth = useSelector(authSelector);
-
   useEffect(() => {
     if (!userAuth) return;
     fetchExpenseList(userAuth).then((listOfExpenses) => {
