@@ -62,6 +62,10 @@ export default function App() {
           path: "/signup",
           element: !userAuth ? <Signup /> : <Dashboard />,
         },
+        {
+          path: "*",
+          element: <Signin />,
+        },
       ],
     },
   ]);
