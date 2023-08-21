@@ -1,4 +1,10 @@
-import { addDoc, arrayUnion, collection, doc, updateDoc } from "@firebase/firestore";
+import {
+  addDoc,
+  arrayUnion,
+  collection,
+  doc,
+  updateDoc,
+} from "@firebase/firestore";
 import { db } from "../firebase/firebase";
 import { toast } from "react-toastify";
 
@@ -34,9 +40,8 @@ export const submitExpenseToDB = async (
   }
 };
 
-
 export const isExpenseAlreadySettled = (participants) => {
-    return participants.every(
-      (participant) => participant.bill === participant.contribution
-    );
-  };
+  return participants.every(
+    (participant) => participant.bill === participant.contribution
+  );
+};

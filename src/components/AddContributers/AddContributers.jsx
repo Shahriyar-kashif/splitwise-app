@@ -19,10 +19,13 @@ import {
   addParticipants,
   participantsSelector,
 } from "../../store/participantsSlice";
-import { fetchUserData, fetchUsers } from "../../Utilities/firebaseUtilities";
+import { fetchUsers } from "../../Utilities/firebaseUtilities";
 import { toast } from "react-toastify";
 import { authSelector } from "../../store/authSlice";
-import { isExpenseValid, isParticipantAlreadyAdded } from "../../Utilities/participantsValidationsUtils";
+import {
+  isExpenseValid,
+  isParticipantAlreadyAdded,
+} from "../../Utilities/participantsValidationsUtils";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;

@@ -29,18 +29,20 @@ export default function SigninForm() {
       .then((userCredentials) => {
         const user = userCredentials.user;
         if (submissionError) setSubmissionError(null);
-        toast.success('Successfully logged in!');
+        toast.success("Successfully logged in!");
         navigate(`/user`);
       })
       .catch((error) => {
-        console.log(error.message)
-        if (error.message.includes('auth/user-not-found')) setSubmissionError('Email doesnt exist!');
-        else if (error.message.includes('auth/wrong-password')) setSubmissionError('Incorrect password!');
+        console.log(error.message);
+        if (error.message.includes("auth/user-not-found"))
+          setSubmissionError("Email doesnt exist!");
+        else if (error.message.includes("auth/wrong-password"))
+          setSubmissionError("Incorrect password!");
         else setSubmissionError(error.message);
       })
       .finally(() => {
         setDisableState(false);
-      })
+      });
   };
 
   return (
@@ -58,27 +60,27 @@ export default function SigninForm() {
           Sign in
         </Typography>
         <Box component="form" sx={{ mt: 3 }} onSubmit={handleSubmit}>
-              <TextField
-                name="email"
-                margin="normal"
-                required
-                type="email"
-                fullWidth
-                id="email"
-                label="Email Address"
-                autoComplete="email"
-                autoFocus
-              />
-              <TextField
-                margin="normal"
-                required
-                fullWidth
-                id="password"
-                label="Password"
-                type="password"
-                name="password"
-                autoComplete="current-password"
-              />
+          <TextField
+            name="email"
+            margin="normal"
+            required
+            type="email"
+            fullWidth
+            id="email"
+            label="Email Address"
+            autoComplete="email"
+            autoFocus
+          />
+          <TextField
+            margin="normal"
+            required
+            fullWidth
+            id="password"
+            label="Password"
+            type="password"
+            name="password"
+            autoComplete="current-password"
+          />
           <Button
             type="submit"
             fullWidth

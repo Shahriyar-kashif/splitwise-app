@@ -1,4 +1,3 @@
-import { useNavigate } from "react-router";
 import {
   Box,
   Button,
@@ -7,12 +6,10 @@ import {
   ListItem,
   ListItemText,
   Paper,
-  Skeleton,
   Typography,
 } from "@mui/material";
-import { doc, getDoc, updateDoc } from "@firebase/firestore";
+import { arrayUnion, doc, updateDoc } from "@firebase/firestore";
 import { auth, db } from "../../firebase/firebase";
-import { onAuthStateChanged } from "@firebase/auth";
 import { useEffect, useState } from "react";
 import { settleDebt } from "../../Utilities/expenseSettlementUtil";
 import {
@@ -22,30 +19,22 @@ import {
 import { toast } from "react-toastify";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
+import {
+  clearPayeeExpense,
+  clearPayerExpense,
+  filterOutAlreadySettledExpenses,
+} from "../../Utilities/userProfileUtils";
 
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
   const [settlementRecord, setSettlementRecord] = useState([]);
-  console.log(auth.currentUser);
-  const userOwes = settlementRecord.filter(
-    (user) => user.payerName === `${userData.firstName} ${userData.lastName}`
+  const [alreadySettled, setAlreadySettled] = useState([]);
+  const updatedRecord = settlementRecord.slice();
+  const [userOwes, userIsOwed] = filterOutAlreadySettledExpenses(
+    alreadySettled,
+    updatedRecord,
+    userData
   );
-  const userOwesExactlyOne = userOwes.filter((user, i, arr) => {
-    return (
-      arr.filter((record) => record.expenseId === user.expenseId).length < 2
-    );
-  });
-  console.log(userOwesExactlyOne);
-  const userOwesMultipleInOneExpense = userOwes.filter((user, i, arr) => {
-    return (
-      arr.filter((record) => record.expenseId === user.expenseId).length > 1
-    );
-  });
-  console.log(userOwesMultipleInOneExpense);
-  const userIsOwed = settlementRecord.filter(
-    (user) => user.payeeName === `${userData.firstName} ${userData.lastName}`
-  );
-  const navigate = useNavigate();
   const userAuth = useSelector(authSelector);
 
   useEffect(() => {
@@ -65,80 +54,48 @@ export default function UserProfile() {
     });
     fetchUserData(userAuth).then((userData) => {
       setUserData(userData);
+      const settlements = userData.settlements || [];
+      console.log(settlements);
+      setAlreadySettled([...settlements]);
     });
   }, [userAuth]);
 
-  const handleMultipleSettlement = async (expenseId) => {
-    const recordsToBeSettled = settlementRecord.filter(
+  const settleExpense = async (expenseId, userId, payeeId) => {
+    const recordToBeSettled = settlementRecord.find(
+      (record) =>
+        record.expenseId === expenseId &&
+        record.payerId === userId &&
+        record.payeeId === payeeId
+    );
+
+    const payerDocRef = doc(db, "users-db", userId);
+    await updateDoc(payerDocRef, {
+      settlements: arrayUnion(recordToBeSettled),
+    });
+
+    const payeeDocRef = doc(db, "users-db", payeeId);
+    await updateDoc(payeeDocRef, {
+      settlements: arrayUnion(recordToBeSettled),
+    });
+    setAlreadySettled([...alreadySettled, recordToBeSettled]);
+
+    const settledRecordsForThisExpense = alreadySettled.filter(
       (record) => record.expenseId === expenseId
     );
-    console.log(recordsToBeSettled);
-    const userId = recordsToBeSettled[0].payerId;
-    const payerRef = doc(db, "users-db", userId);
-    const payerSnap = await getDoc(payerRef);
-    const updatedPayerExpense = payerSnap
-      .data()
-      .expenses.filter((id) => id !== expenseId);
-    await updateDoc(payerRef, {
-      expenses: updatedPayerExpense,
-    });
-    recordsToBeSettled.forEach(async (record) => {
-      const payeeRef = doc(db, "users-db", record.payeeId);
-      const payeeSnap = await getDoc(payeeRef);
-      const updatedPayeeExpense = payeeSnap
-        .data()
-        .expenses.filter((id) => id !== expenseId);
-      await updateDoc(payeeRef, {
-        expenses: updatedPayeeExpense,
-      });
-    });
-    const updatedRecord = settlementRecord.filter(
-      (record) => record.expenseId !== expenseId
-    );
-    setSettlementRecord([...updatedRecord]);
-  };
-
-  const settleExpense = async (expenseId, userId, payeeId) => {
-    const debtsPerExpense = settlementRecord.filter(
+    const settlementsOfThisExpense = settlementRecord.filter(
       (record) => record.expenseId === expenseId && record.payerId === userId
     );
-    if (debtsPerExpense.length > 1) {
-      const recordToBeSettled = settlementRecord.findIndex(
-        (record) =>
-          record.expenseId === expenseId &&
-          record.payerId === userId &&
-          record.payeeId === payeeId
-      );
-      const updatedRecord = settlementRecord.slice();
-      updatedRecord.splice(recordToBeSettled, 1);
-      setSettlementRecord([...updatedRecord]);
-    } else {
-      const recordToBeSettled = settlementRecord.findIndex(
-        (record) =>
-          record.expenseId === expenseId &&
-          record.payerId === userId &&
-          record.payeeId === payeeId
-      );
-      const updatedRecord = settlementRecord.slice();
-      updatedRecord.splice(recordToBeSettled, 1);
-      const payerRef = doc(db, "users-db", userId);
-      const payeeRef = doc(db, "users-db", payeeId);
-      const payerSnap = await getDoc(payerRef);
-      const payeeSnap = await getDoc(payeeRef);
-      const updatedPayeeExpense = payeeSnap
-        .data()
-        .expenses.filter((id) => id !== expenseId);
-      const updatedPayerExpense = payerSnap
-        .data()
-        .expenses.filter((id) => id !== expenseId);
-      await updateDoc(payerRef, {
-        expenses: updatedPayerExpense,
-      });
-      await updateDoc(payeeRef, {
-        expenses: updatedPayeeExpense,
-      });
-      setSettlementRecord([...updatedRecord]);
-    }
+    clearPayerExpense(
+      settledRecordsForThisExpense,
+      settlementsOfThisExpense,
+      alreadySettled,
+      expenseId,
+      userId
+    );
+    const settlementsOfPayeeExpense = settlementRecord.filter(
+      (record) => record.expenseId === expenseId && record.payeeId === payeeId
+    );
+    clearPayeeExpense(payeeDocRef, settlementsOfPayeeExpense, expenseId);
     toast.success("Debt settled succesfully!");
   };
 
@@ -167,7 +124,17 @@ export default function UserProfile() {
           >
             Your outstanding debts
           </Typography>
-          {userOwesExactlyOne.map((user) => {
+          {userOwes.length === 0 && (
+            <Typography
+              component="p"
+              color="text.secondary"
+              align="center"
+              sx={{ p: 3 }}
+            >
+              You have no outstanding debts.
+            </Typography>
+          )}
+          {userOwes.map((user) => {
             return (
               <ListItem
                 secondaryAction={
@@ -186,26 +153,6 @@ export default function UserProfile() {
               </ListItem>
             );
           })}
-          {userOwesMultipleInOneExpense &&
-            userOwesMultipleInOneExpense.map((user, i, arr) => {
-              return (
-                <ListItem>
-                  <ListItemText
-                    primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
-                    sx={{ display: "inline" }}
-                  />
-                  {((arr.length - 1 === i) || (user.expenseId !== arr[i+1].expenseId )) && (
-                    <Button
-                      onClick={() => {
-                        handleMultipleSettlement(user.expenseId);
-                      }}
-                    >
-                      Settle
-                    </Button>
-                  )}
-                </ListItem>
-              );
-            })}
         </List>
         <Divider orientation="vertical" flexItem />
         <List
@@ -219,6 +166,16 @@ export default function UserProfile() {
           >
             Debts owed to you
           </Typography>
+          {userIsOwed.length === 0 && (
+            <Typography
+              component="p"
+              color="text.secondary"
+              align="center"
+              sx={{ p: 3 }}
+            >
+              No one owes you money at the moment.
+            </Typography>
+          )}
           {userIsOwed.map((user) => {
             return (
               <ListItem alignItems="center">

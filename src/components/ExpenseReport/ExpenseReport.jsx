@@ -9,6 +9,7 @@ import {
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
 import { Suspense } from "react";
+
 const style = {
   position: "absolute",
   top: "50%",

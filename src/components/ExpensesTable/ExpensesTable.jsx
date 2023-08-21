@@ -1,3 +1,5 @@
+import ExpenseReport from "../ExpenseReport/ExpenseReport";
+import SkeletonUI from "../SkeletonUI/SkeletonUI";
 import {
   Table,
   TableBody,
@@ -10,11 +12,9 @@ import {
 } from "@mui/material";
 import { storage } from "../../firebase/firebase";
 import { useEffect, useState } from "react";
-import ExpenseReport from "../ExpenseReport/ExpenseReport";
 import { getDownloadURL, ref } from "@firebase/storage";
 import { settleDebt } from "../../Utilities/expenseSettlementUtil";
 import { fetchExpenseList } from "../../Utilities/firebaseUtilities";
-import SkeletonUI from "../SkeletonUI/SkeletonUI";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
 
@@ -76,13 +76,22 @@ export default function ExpensesTable() {
             </TableRow>
           </TableHead>
           <TableBody>
-            {isLoading &&
-            <TableRow>
-                <TableCell><SkeletonUI /></TableCell>
-                <TableCell><SkeletonUI /></TableCell>
-                <TableCell><SkeletonUI /></TableCell>
-                <TableCell><SkeletonUI /></TableCell>
-            </TableRow>}
+            {isLoading && (
+              <TableRow>
+                <TableCell>
+                  <SkeletonUI />
+                </TableCell>
+                <TableCell>
+                  <SkeletonUI />
+                </TableCell>
+                <TableCell>
+                  <SkeletonUI />
+                </TableCell>
+                <TableCell>
+                  <SkeletonUI />
+                </TableCell>
+              </TableRow>
+            )}
             {expenseList.map((expense, i) => {
               return (
                 <TableRow

@@ -153,11 +153,7 @@ export default function Navbar(props) {
             )}
             {userAuth && (
               <>
-                <Button
-                  component={Link}
-                  to={`/user`}
-                  sx={{ color: "#fff" }}
-                >
+                <Button component={Link} to={`/user`} sx={{ color: "#fff" }}>
                   Dashboard
                 </Button>
                 <Button
