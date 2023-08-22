@@ -27,21 +27,38 @@ To install these dependencies, use the following command:
 ```bash
 npm install
 ```
+## Database
+The Splitwise app uses Firebase for database storage and user authentication. Firebase provides a real-time database and authentication services, making it easy to store and retrieve data while ensuring secure user access.
+The database is structured to accommodate the following entities:
+- 'users-db': Store user profiles, authentication data, and other user-related information.
+- 'expense': Maintain information about expenses, such as descriptions, amounts, participants, and images.
+To use the firebase configuration:
+- Add your keys as specified in the .env.sample file to your firebase configuration object and use that object in the firebase.js file.
+- You can find the firebase.js file in src/firebase/.
 
 ## Development Setup
 Follow these steps to set up your development environment:
 - Clone the repository:
-    'git clone https://github.com/Shahriyar-kashif/splitwise-app.git'
+    ```
+    git clone https://github.com/Shahriyar-kashif/splitwise-app.git
+    ```
 - Navigate to the project directory:
-    'cd splitwise-app'
+    ```
+    cd splitwise-app
+    ```
 - Install dependencies:
-    'npm install'
-
+    ```
+    npm install
+    ```
 
 ## Running the App
 To run the app locally, use the following command:
-    'npm run dev'
+```
+    npm install
+```
 
 ## Creating a Build for Production
 To create a build for the app production, use the following command:
-    'npm run build'
+```
+    npm run build
+```
