@@ -4,7 +4,6 @@ import { ref, uploadBytes } from "@firebase/storage";
 import { v4 } from "uuid";
 
 export const fetchExpenseList = async (user) => {
-  console.log("start1");
   if (!user) return;
   const docRef = doc(db, "users-db", user?.id);
   const docSnap = await getDoc(docRef);
@@ -20,7 +19,6 @@ export const fetchExpenseList = async (user) => {
       }
     });
     const listOfExpenses = await Promise.all(listOfPromises);
-    console.log("end1");
     return listOfExpenses;
   } else {
     return [];
@@ -28,10 +26,6 @@ export const fetchExpenseList = async (user) => {
 };
 
 export const fetchUserData = async (user) => {
-  // const usersSnapshot = await getDocs(collection(db, "users-db"));
-  // const users = [];
-  //   usersSnapshot.forEach((doc) => users.push(doc.data()));
-  //   return users;
   if (!user) return;
   const userId = user?.id;
   const userRef = doc(db, "users-db", userId);
@@ -48,10 +42,8 @@ export const fetchUsers = async (userAuth) => {
   const usersSnapshot = await getDocs(collection(db, "users-db"));
   const users = [];
   const userData = await fetchUserData(userAuth);
-  console.log(userData);
   usersSnapshot.forEach((doc) => users.push(doc.data()));
   const updatedUsers = users.filter((user) => user.email !== userData.email);
-  console.log(updatedUsers);
   return updatedUsers;
 };
 
@@ -65,4 +57,3 @@ export const uploadImageToDB = (uploadedImage) => {
   }
   return imagePath;
 };
-

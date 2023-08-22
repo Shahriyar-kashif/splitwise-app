@@ -1,4 +1,8 @@
-export const calculateCumulativeExpense = (participants, signedInUserBill, signedInUserContribution) => {
+export const calculateCumulativeExpense = (
+  participants,
+  signedInUserBill,
+  signedInUserContribution
+) => {
   if (participants.length > 0) {
     const totalBill = participants.reduce((accum, current) => {
       return {
@@ -12,9 +16,9 @@ export const calculateCumulativeExpense = (participants, signedInUserBill, signe
     };
   } else {
     return {
-        bill: signedInUserBill,
-        contribution: signedInUserContribution,
-    }
+      bill: signedInUserBill,
+      contribution: signedInUserContribution,
+    };
   }
 };
 
@@ -26,21 +30,23 @@ export const isExpenseValid = (
   signedInUserContribution,
   totalBill
 ) => {
-  const participantPayment = calculateCumulativeExpense(participants, signedInUserBill, signedInUserContribution);
+  const participantPayment = calculateCumulativeExpense(
+    participants,
+    signedInUserBill,
+    signedInUserContribution
+  );
 
   return (
     participantPayment.bill + participantBill > totalBill ||
-    participantPayment.contribution +
-      participantContribution  >
-      totalBill ||
+    participantPayment.contribution + participantContribution > totalBill ||
     participantContribution > totalBill ||
     participantBill > totalBill
   );
 };
 
 export const isParticipantAlreadyAdded = (participants, email) => {
-    const repeatedParticipant = participants.find(
-      (participant) => participant.email === email
-    );
-    return repeatedParticipant;
-  };
+  const repeatedParticipant = participants.find(
+    (participant) => participant.email === email
+  );
+  return repeatedParticipant;
+};

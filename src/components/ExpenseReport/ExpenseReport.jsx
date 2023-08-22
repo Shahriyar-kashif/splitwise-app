@@ -9,6 +9,7 @@ import {
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
 import { Suspense } from "react";
+
 const style = {
   position: "absolute",
   top: "50%",
@@ -47,7 +48,11 @@ export default function ExpenseReport({
             </Typography>
             {expenseDetails.participants.map((expense) => {
               return (
-                <Typography color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                  key={expense.id}
+                >
                   {expense.id === userAuth.id ? "You" : expense?.name} ordered
                   for {expense.bill} {expenseDetails.currency} and paid{" "}
                   {expense.contribution} {expenseDetails.currency}
@@ -59,7 +64,11 @@ export default function ExpenseReport({
             </Typography>
             {report.map((expense) => {
               return (
-                <Typography color="text.secondary" sx={{ mb: 1 }}>
+                <Typography
+                  color="text.secondary"
+                  sx={{ mb: 1 }}
+                  key={expense.payerName + expense.payeeName}
+                >
                   {expense.payerId === userAuth.id
                     ? "You owe"
                     : expense?.payerName + " owes"}{" "}

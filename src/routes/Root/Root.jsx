@@ -1,26 +1,25 @@
-import { Outlet, useNavigate } from "react-router-dom"
-import Navbar from "../../components/Navbar/Navbar"
-import { ToastContainer } from "react-toastify"
-import 'react-toastify/dist/ReactToastify.css';
+import Navbar from "../../components/Navbar/Navbar";
+import { Outlet, useNavigate } from "react-router-dom";
+import { ToastContainer } from "react-toastify";
 import { onAuthStateChanged } from "@firebase/auth";
 import { auth } from "../../firebase/firebase";
 import { useEffect } from "react";
-
+import "react-toastify/dist/ReactToastify.css";
 
 export default function Root() {
-    const navigate = useNavigate();
+  const navigate = useNavigate();
 
-    useEffect(() => {
-        onAuthStateChanged(auth, user => {
-            if (user) navigate('/user');
-        })
-    }, []);
+  useEffect(() => {
+    onAuthStateChanged(auth, (user) => {
+      if (user) navigate("/user");
+    });
+  }, []);
 
-    return(
-        <>
-        <Navbar />
-        <ToastContainer position="top-left" />
-        <Outlet />
-        </>
-    )
+  return (
+    <>
+      <Navbar />
+      <ToastContainer position="top-left" />
+      <Outlet />
+    </>
+  );
 }

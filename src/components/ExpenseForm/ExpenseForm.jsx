@@ -17,25 +17,16 @@ import {
   clearParticpants,
   participantsSelector,
 } from "../../store/participantsSlice";
-import { db, storage } from "../../firebase/firebase";
-import { ref, uploadBytes } from "@firebase/storage";
-import { v4 } from "uuid";
 import { authSelector } from "../../store/authSlice";
-import {
-  addDoc,
-  arrayUnion,
-  collection,
-  updateDoc,
-  doc,
-
-} from "@firebase/firestore";
 import {
   fetchUserData,
   uploadImageToDB,
 } from "../../Utilities/firebaseUtilities";
-import { toast } from "react-toastify";
 import { calculateCumulativeExpense } from "../../Utilities/participantsValidationsUtils";
-import { isExpenseAlreadySettled, submitExpenseToDB } from "../../Utilities/expenseFormUtils";
+import {
+  isExpenseAlreadySettled,
+  submitExpenseToDB,
+} from "../../Utilities/expenseFormUtils";
 
 
 const ITEM_HEIGHT = 48;
@@ -81,7 +72,7 @@ export default function ExpenseForm() {
   useEffect(() => {
     fetchUserData(userAuth).then((userData) => {
       setUserData(userData);
-    }); // add catch block
+    });
     return () => {
       dispatch(clearParticpants());
     };

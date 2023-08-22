@@ -25,17 +25,18 @@ export default function SignupForm() {
 
   const handleInputChange = (e, setChange) => {
     const value = e.target.value;
-    console.log(/^[a-zA-Z]*$/.test(value))
-    if(/^[a-zA-Z]*$/.test(value) || value === "")
-    setChange(value);
-  }
+    if (/^[a-zA-Z]*$/.test(value) || value === "") setChange(value);
+  };
 
   const handleSubmit = (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
     const email = formData.get("email");
     const password = formData.get("password");
-    const [firstName, lastName] = [formData.get('firstName'), formData.get('lastName')];
+    const [firstName, lastName] = [
+      formData.get("firstName"),
+      formData.get("lastName"),
+    ];
     setDisableState(true);
     createUserWithEmailAndPassword(auth, email, password)
       .then((userCredentials) => {
@@ -46,18 +47,22 @@ export default function SignupForm() {
           firstName: firstName,
           lastName: lastName,
         });
-        toast.success("Sign up Successful! You're Now Logged In")
-        updateProfile(auth.currentUser, {displayName: `${firstName} ${lastName}`});
+        toast.success("Sign up Successful! You're Now Logged In");
+        updateProfile(auth.currentUser, {
+          displayName: `${firstName} ${lastName}`,
+        });
         navigate(`/user`);
       })
       .catch((error) => {
-        if (error.message.includes('auth/weak-password')) setSubmissionError('Password should be at least 6 characters');
-        else if (error.message.includes('auth/email-already-in-use')) setSubmissionError('Email already registered')
-        else  setSubmissionError(error.message);
+        if (error.message.includes("auth/weak-password"))
+          setSubmissionError("Password should be at least 6 characters");
+        else if (error.message.includes("auth/email-already-in-use"))
+          setSubmissionError("Email already registered");
+        else setSubmissionError(error.message);
       })
-      .finally (() => {
+      .finally(() => {
         setDisableState(false);
-      })
+      });
   };
 
   return (
@@ -82,7 +87,9 @@ export default function SignupForm() {
                 required
                 fullWidth
                 value={firstName}
-                onChange={(e) => {handleInputChange(e, setFirstName)}}
+                onChange={(e) => {
+                  handleInputChange(e, setFirstName);
+                }}
                 id="firstName"
                 label="First Name"
                 autoFocus
@@ -94,7 +101,9 @@ export default function SignupForm() {
                 fullWidth
                 id="lastName"
                 value={lastName}
-                onChange={(e) => {handleInputChange(e, setLastName)}}
+                onChange={(e) => {
+                  handleInputChange(e, setLastName);
+                }}
                 label="Last Name"
                 name="lastName"
                 autoComplete="family-name"
