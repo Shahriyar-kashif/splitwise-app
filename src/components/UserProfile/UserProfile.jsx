@@ -36,7 +36,6 @@ export default function UserProfile() {
     userData
   );
   const userAuth = useSelector(authSelector);
-
   useEffect(() => {
     if (!userAuth) return;
     fetchExpenseList(userAuth).then((listOfExpenses) => {
