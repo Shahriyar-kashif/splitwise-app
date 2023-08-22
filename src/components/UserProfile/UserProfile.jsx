@@ -24,11 +24,13 @@ import {
   clearPayerExpense,
   filterOutAlreadySettledExpenses,
 } from "../../Utilities/userProfileUtils";
+import { USERS_COLLECTION } from "../../constants/constants";
 
 export default function UserProfile() {
   const [userData, setUserData] = useState(null);
   const [settlementRecord, setSettlementRecord] = useState([]);
   const [alreadySettled, setAlreadySettled] = useState([]);
+  const [disable, setDisable] = useState(false);
   const updatedRecord = settlementRecord.slice();
   const [userOwes, userIsOwed] = filterOutAlreadySettledExpenses(
     alreadySettled,
@@ -59,19 +61,18 @@ export default function UserProfile() {
   }, [userAuth]);
 
   const settleExpense = async (expenseId, userId, payeeId) => {
+    setDisable(true);
     const recordToBeSettled = settlementRecord.find(
       (record) =>
         record.expenseId === expenseId &&
         record.payerId === userId &&
         record.payeeId === payeeId
     );
-
-    const payerDocRef = doc(db, "users-db", userId);
+    const payerDocRef = doc(db, USERS_COLLECTION, userId);
     await updateDoc(payerDocRef, {
       settlements: arrayUnion(recordToBeSettled),
     });
-
-    const payeeDocRef = doc(db, "users-db", payeeId);
+    const payeeDocRef = doc(db, USERS_COLLECTION, payeeId);
     await updateDoc(payeeDocRef, {
       settlements: arrayUnion(recordToBeSettled),
     });
@@ -94,6 +95,7 @@ export default function UserProfile() {
       (record) => record.expenseId === expenseId && record.payeeId === payeeId
     );
     clearPayeeExpense(payeeDocRef, settlementsOfPayeeExpense, expenseId);
+    setDisable(false);
     toast.success("Debt settled succesfully!");
   };
 
@@ -141,6 +143,7 @@ export default function UserProfile() {
                     onClick={() =>
                       settleExpense(user.expenseId, user.payerId, user.payeeId)
                     }
+                    disabled={disable}
                   >
                     Settle
                   </Button>

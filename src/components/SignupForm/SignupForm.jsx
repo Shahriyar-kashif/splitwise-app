@@ -15,6 +15,7 @@ import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { doc, setDoc } from "firebase/firestore";
 import { toast } from "react-toastify";
+import { USERS_COLLECTION } from "../../constants/constants";
 
 export default function SignupForm() {
   const [submissionError, setSubmissionError] = useState(null);
@@ -42,7 +43,7 @@ export default function SignupForm() {
       .then((userCredentials) => {
         const user = userCredentials.user;
         if (submissionError) setSubmissionError(null);
-        setDoc(doc(db, "users-db", user.uid), {
+        setDoc(doc(db, USERS_COLLECTION, user.uid), {
           email: user.email,
           firstName: firstName,
           lastName: lastName,

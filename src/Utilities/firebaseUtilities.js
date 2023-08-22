@@ -2,16 +2,17 @@ import { collection, doc, getDoc, getDocs } from "@firebase/firestore";
 import { db, storage } from "../firebase/firebase";
 import { ref, uploadBytes } from "@firebase/storage";
 import { v4 } from "uuid";
+import { EXPENSES_COLLECTION, USERS_COLLECTION } from "../constants/constants";
 
 export const fetchExpenseList = async (user) => {
   if (!user) return;
-  const docRef = doc(db, "users-db", user?.id);
+  const docRef = doc(db, USERS_COLLECTION, user?.id);
   const docSnap = await getDoc(docRef);
   if (docSnap.exists()) {
     const userData = docSnap.data();
     const expenseIds = userData.expenses || [];
     const listOfPromises = expenseIds.map(async (expenseId) => {
-      const expenseRef = doc(db, "expense", expenseId);
+      const expenseRef = doc(db, EXPENSES_COLLECTION, expenseId);
       const expenseSnap = await getDoc(expenseRef);
       if (expenseSnap.exists()) {
         const expenseData = expenseSnap.data();
@@ -28,7 +29,7 @@ export const fetchExpenseList = async (user) => {
 export const fetchUserData = async (user) => {
   if (!user) return;
   const userId = user?.id;
-  const userRef = doc(db, "users-db", userId);
+  const userRef = doc(db, USERS_COLLECTION, userId);
   const userSnap = await getDoc(userRef);
   if (userSnap.exists()) {
     const userData = userSnap.data();
@@ -39,7 +40,7 @@ export const fetchUserData = async (user) => {
 };
 
 export const fetchUsers = async (userAuth) => {
-  const usersSnapshot = await getDocs(collection(db, "users-db"));
+  const usersSnapshot = await getDocs(collection(db, USERS_COLLECTION));
   const users = [];
   const userData = await fetchUserData(userAuth);
   usersSnapshot.forEach((doc) => users.push(doc.data()));

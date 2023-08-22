@@ -1,5 +1,6 @@
 import { doc, getDoc, updateDoc } from "@firebase/firestore";
 import { db } from "../firebase/firebase";
+import { USERS_COLLECTION } from "../constants/constants";
 
 export const filterOutAlreadySettledExpenses = (
   alreadySettled,
@@ -39,7 +40,7 @@ export const clearPayerExpense = async (
     const updatedRecords = alreadySettled.filter(
       (record) => record.expenseId !== expenseId
     );
-    const payerDocRef = doc(db, "users-db", userId);
+    const payerDocRef = doc(db, USERS_COLLECTION, userId);
     await updateDoc(payerDocRef, {
       settlements: [...updatedRecords],
     });

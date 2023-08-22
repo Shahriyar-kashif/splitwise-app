@@ -26,17 +26,8 @@ import {
   isExpenseValid,
   isParticipantAlreadyAdded,
 } from "../../Utilities/participantsValidationsUtils";
-
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
-const MenuProps = {
-  PaperProps: {
-    style: {
-      maxHeight: ITEM_HEIGHT * 4.5 + ITEM_PADDING_TOP,
-      width: 250,
-    },
-  },
-};
+import { USERS_COLLECTION } from "../../constants/constants";
+import PropTypes from 'prop-types';
 
 const style = {
   position: "absolute",
@@ -54,89 +45,95 @@ export default function AddContributers({
   open,
   setClose,
   totalBill,
-  userBill,
-  userContribution,
+  signedInUserBill = 0,
+  signedInUserContribution = 0,
+  menuProps,
 }) {
-  const [email, setEmail] = useState("");
-  const [errorMessage, setErrorMessage] = useState(false);
-  const [currentParticipant, setCurrentParticipant] = useState(null);
-  const [amountError, setAmountError] = useState("");
-  const [negativeValError, setNegativeValError] = useState(false);
-  const [users, setUsers] = useState([]);
-  const [isLoading, setIsLoading] = useState(true);
-  const contributionRef = useRef();
-  const billRef = useRef();
-  const contributorRef = useRef();
-  const dispatch = useDispatch();
-  const participants = useSelector(participantsSelector);
-  const signedInUserBill = Number(userBill) || 0;
-  const signedInUserContribution = Number(userContribution) || 0;
-  const userAuth = useSelector(authSelector);
+    const [email, setEmail] = useState("");
+    const [errorMessage, setErrorMessage] = useState(false);
+    const [currentParticipant, setCurrentParticipant] = useState(null);
+    const [amountError, setAmountError] = useState("");
+    const [negativeValError, setNegativeValError] = useState(false);
+    const [users, setUsers] = useState([]);
+    const [isLoading, setIsLoading] = useState(true);
+    const [disableAddBtn, setDisableAddBtn] = useState(false);
+    const contributionRef = useRef();
+    const billRef = useRef();
+    const contributorRef = useRef();
+    const dispatch = useDispatch();
+    const participants = useSelector(participantsSelector);
+    const userAuth = useSelector(authSelector);
 
-  useEffect(() => {
-    fetchUsers(userAuth)
-      .then((users) => {
-        setUsers([...users]);
-        setIsLoading(false);
-      })
-      .catch((error) => {
-        setIsLoading(false);
-      });
-  }, []);
+    useEffect(() => {
+      fetchUsers(userAuth)
+        .then((users) => {
+          setUsers([...users]);
+          setIsLoading(false);
+        })
+        .catch((error) => {
+          toast.error(error.message);
+          setIsLoading(false);
+        });
+    }, [userAuth]);
 
-  const handleEmailChange = (event) => {
-    setEmail(event.target.value);
-  };
+    const handleEmailChange = (event) => {
+      setEmail(event.target.value);
+    };
 
-  const handleParticipants = async () => {
-    const [userEmail, userBill, userContribution] = [
-      contributorRef.current.value,
-      Number(billRef.current.value),
-      Number(contributionRef.current.value),
-    ];
+    const handleParticipants = async () => {
+      setDisableAddBtn(true);
+      const [userEmail, userBill, userContribution] = [
+        contributorRef.current.value,
+        Number(billRef.current.value),
+        Number(contributionRef.current.value),
+      ];
 
-    const usersRef = collection(db, "users-db");
-    const matchedUser = query(usersRef, where("email", "==", userEmail));
-    const userSnapShot = await getDocs(matchedUser);
+      const usersRef = collection(db, USERS_COLLECTION);
+      const matchedUser = query(usersRef, where("email", "==", userEmail));
+      const userSnapShot = await getDocs(matchedUser);
 
-    if (isParticipantAlreadyAdded(participants, userEmail)) {
-      setErrorMessage(true);
-      return;
-    } else setErrorMessage(false);
+      if (isParticipantAlreadyAdded(participants, userEmail)) {
+        setErrorMessage(true);
+        setDisableAddBtn(false);
+        return;
+      } else setErrorMessage(false);
 
-    if (
-      isExpenseValid(
-        participants,
-        userBill,
-        userContribution,
-        signedInUserBill,
-        signedInUserContribution,
-        totalBill
-      )
-    ) {
-      setAmountError(true);
-      return;
-    } else setAmountError(false);
+      if (
+        isExpenseValid(
+          participants,
+          userBill,
+          userContribution,
+          signedInUserBill,
+          signedInUserContribution,
+          totalBill
+        )
+      ) {
+        setAmountError(true);
+        setDisableAddBtn(false);
+        return;
+      } else setAmountError(false);
 
-    if (userBill < 0 || userContribution < 0) {
-      setNegativeValError(true);
-      return;
-    } else setNegativeValError(false);
+      if (userBill < 0 || userContribution < 0) {
+        setNegativeValError(true);
+        setDisableAddBtn(false);
+        return;
+      } else setNegativeValError(false);
 
-    if (!userSnapShot.empty) {
-      const userDoc = userSnapShot.docs[0];
-      const participantExpense = {
-        id: userDoc.id,
-        contribution: userContribution,
-        bill: userBill,
-        name: `${userDoc.data().firstName} ${userDoc.data().lastName}`,
-        email: userEmail,
-      };
-      dispatch(addParticipants(participantExpense));
-      setCurrentParticipant(userEmail);
-      toast.success("Contributor added successfully!");
-    }
-  };
+      if (!userSnapShot.empty) {
+        const userDoc = userSnapShot.docs[0];
+        const participantExpense = {
+          id: userDoc.id,
+          contribution: userContribution,
+          bill: userBill,
+          name: `${userDoc.data().firstName} ${userDoc.data().lastName}`,
+          email: userEmail,
+        };
+        dispatch(addParticipants(participantExpense));
+        setCurrentParticipant(userEmail);
+        toast.success("Contributor added successfully!");
+        setDisableAddBtn(false);
+      }
+    };
 
   return (
     <Modal open={open}>
@@ -157,7 +154,7 @@ export default function AddContributers({
               inputRef={contributorRef}
               name="contributors"
               value={email}
-              MenuProps={MenuProps}
+              MenuProps={menuProps}
               onChange={handleEmailChange}
               sx={{ width: "100%" }}
             >
@@ -202,6 +199,7 @@ export default function AddContributers({
               variant="contained"
               sx={{ mt: 3, mb: 2 }}
               onClick={handleParticipants}
+              disabled={disableAddBtn}
             >
               Done
             </Button>
@@ -238,4 +236,13 @@ export default function AddContributers({
       </Container>
     </Modal>
   );
+}
+
+AddContributers.propTypes = {
+  open: PropTypes.bool.isRequired,
+  setClose: PropTypes.func.isRequired,
+  totalBill: PropTypes.number.isRequired,
+  signedInUserBill: PropTypes.number.isRequired,
+  signedInUserContribution: PropTypes.number.isRequired,
+  menuProps: PropTypes.object.isRequired,
 }

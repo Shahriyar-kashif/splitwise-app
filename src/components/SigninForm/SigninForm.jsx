@@ -26,8 +26,7 @@ export default function SigninForm() {
     const password = formData.get("password");
     setDisableState(true);
     signInWithEmailAndPassword(auth, email, password)
-      .then((userCredentials) => {
-        const user = userCredentials.user;
+      .then(() => {
         if (submissionError) setSubmissionError(null);
         toast.success("Successfully logged in!");
         navigate(`/user`);
@@ -100,7 +99,7 @@ export default function SigninForm() {
           <Grid container justifyContent="flex-end">
             <Grid item>
               <Link variant="body2" component={RouterLink} to="/signup">
-                Don't have an account? Sign up
+                Don&apos;t have an account? Sign up
               </Link>
             </Grid>
           </Grid>

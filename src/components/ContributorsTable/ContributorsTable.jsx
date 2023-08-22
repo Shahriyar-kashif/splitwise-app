@@ -8,6 +8,7 @@ import {
 } from "@mui/material";
 import { useSelector } from "react-redux";
 import { participantsSelector } from "../../store/participantsSlice";
+import PropTypes from "prop-types";
 
 export default function ContributorsTable({ currency }) {
   const participants = useSelector(participantsSelector);
@@ -42,4 +43,8 @@ export default function ContributorsTable({ currency }) {
       </Table>
     </TableContainer>
   );
+}
+
+ContributorsTable.propTypes ={
+    currency: PropTypes.string.isRequired,
 }

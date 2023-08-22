@@ -11,7 +11,7 @@ import {
   Typography,
   Grid,
 } from "@mui/material";
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import {
   clearParticpants,
@@ -27,10 +27,8 @@ import {
   isExpenseAlreadySettled,
   submitExpenseToDB,
 } from "../../Utilities/expenseFormUtils";
+import { ITEM_HEIGHT, ITEM_PADDING_TOP } from "../../constants/constants";
 
-
-const ITEM_HEIGHT = 48;
-const ITEM_PADDING_TOP = 8;
 const MenuProps = {
   PaperProps: {
     style: {
@@ -54,6 +52,12 @@ const currencies = [
 ];
 
 export default function ExpenseForm() {
+  const initialFormData = {
+    description: "",
+    totalBill: 0,
+    userBill: 0,
+    userContribution: 0,
+  };
   const [openModal, setOpenModal] = useState(false);
   const [disable, setDisable] = useState(true);
   const [disableFormButton, setDisableFormButton] = useState(false);
@@ -62,10 +66,8 @@ export default function ExpenseForm() {
   const [errorMessage, setErrorMessage] = useState(false);
   const [userData, setUserData] = useState(null);
   const [settlementError, setSettlementError] = useState(false);
+  const [formFields, setFormFields] = useState(initialFormData);
   const participants = useSelector(participantsSelector);
-  const totalBillRef = useRef();
-  const userBillRef = useRef();
-  const userContributionRef = useRef();
   const dispatch = useDispatch();
   const userAuth = useSelector(authSelector);
 
@@ -76,21 +78,26 @@ export default function ExpenseForm() {
     return () => {
       dispatch(clearParticpants());
     };
+      // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
+
+  const handleInputChange = (e) => {
+    const { name, value } = e.target;
+    if (name === "totalBill" && value < 0) return;
+    setFormFields((prevState) => ({ ...prevState, [name]: value }));
+    if (name === "totalBill" && value > 0) {
+      setDisable(false);
+    } else if ((name === "totalBill") & (value === 0)) {
+      setDisable(true);
+    }
+  };
 
   const handleOpen = () => {
     setOpenModal(true);
   };
+
   const handleClose = () => {
     setOpenModal(false);
-  };
-
-  const handleDisable = (e) => {
-    if (e.target.value > 0) {
-      setDisable(false);
-    } else {
-      setDisable(true);
-    }
   };
 
   const handleCurrency = (event) => {
@@ -105,20 +112,21 @@ export default function ExpenseForm() {
   const handleExpenseAddition = async (e) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
-    const userContribution = Number(formData.get("userContribution")) || 0;
-    const userBill = Number(formData.get("userBill")) || 0;
-    const totalBill = Number(formData.get("totalBill"));
+    const userContribution = Number(formFields.userContribution);
+    const userBill = Number(formFields.userBill);
+    const totalBill = Number(formFields.totalBill);
     const imagePath = uploadImageToDB(uploadedImage);
+
     const currentUser = {
       id: userAuth.id,
       email: userData?.email,
       name: `${userData?.firstName} ${userData?.lastName}`,
       contribution: userContribution,
-      bill: Number(formData.get("userBill")),
+      bill: userBill,
     };
     const expense = {
-      description: formData.get("description"),
-      totalBill: Number(formData.get("totalBill")),
+      description: formFields.description,
+      totalBill: totalBill,
       date: formData.get("date"),
       currency: formData.get("currency"),
       image: imagePath ?? null,
@@ -141,13 +149,14 @@ export default function ExpenseForm() {
       isExpenseAlreadySettled(participants)
     ) {
       setSettlementError(true);
-      e.target.reset();
+      setFormFields(initialFormData);
       dispatch(clearParticpants());
       return;
     } else setSettlementError(false);
     setDisableFormButton(true);
     submitExpenseToDB(userAuth, participants, expense, setDisableFormButton);
-    e.target.reset();
+    dispatch(clearParticpants());
+    setFormFields(initialFormData);
   };
 
   return (
@@ -155,7 +164,9 @@ export default function ExpenseForm() {
       <Box component="form" sx={{ mt: 3 }} onSubmit={handleExpenseAddition}>
         <TextField
           margin="normal"
+          onChange={handleInputChange}
           required
+          value={formFields.description}
           fullWidth
           id="description"
           label="Add Expense Description"
@@ -180,13 +191,13 @@ export default function ExpenseForm() {
             <TextField
               margin="normal"
               required
-              inputRef={totalBillRef}
+              value={formFields.totalBill}
+              onChange={handleInputChange}
               fullWidth
               id="total-bill"
               inputProps={{ min: 0 }}
               label="Total Bill"
               type="number"
-              onChange={handleDisable}
               name="totalBill"
               autoComplete="current-bill"
             />
@@ -217,7 +228,8 @@ export default function ExpenseForm() {
               required
               fullWidth
               id="user-bill"
-              inputRef={userBillRef}
+              value={formFields.userBill}
+              onChange={handleInputChange}
               label="Add your order bill"
               type="number"
               inputProps={{ min: 0 }}
@@ -232,7 +244,8 @@ export default function ExpenseForm() {
               fullWidth
               id="user-contribution"
               label="Add your payment"
-              inputRef={userContributionRef}
+              value={formFields.userContribution}
+              onChange={handleInputChange}
               type="number"
               inputProps={{ min: 0 }}
               name="userContribution"
@@ -245,11 +258,12 @@ export default function ExpenseForm() {
         </Button>
         {openModal && (
           <AddContributers
-            totalBill={totalBillRef.current.value}
+            totalBill={Number(formFields.totalBill)}
             setClose={handleClose}
             open={openModal}
-            userBill={userBillRef.current.value}
-            userContribution={userContributionRef.current.value}
+            signedInUserBill={Number(formFields.userBill)}
+            signedInUserContribution={Number(formFields.userContribution)}
+            menuProps={MenuProps}
           />
         )}
         {participants.length > 0 && <ContributorsTable currency={currency} />}
@@ -280,7 +294,7 @@ export default function ExpenseForm() {
             sx={{ color: "red" }}
             align="center"
           >
-            Bills and Contributions don't add up to total bill
+            Bills and Contributions don&apos;t add up to total bill
           </Typography>
         )}
         {settlementError && (

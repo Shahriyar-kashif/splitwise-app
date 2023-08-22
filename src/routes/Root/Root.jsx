@@ -13,6 +13,7 @@ export default function Root() {
     onAuthStateChanged(auth, (user) => {
       if (user) navigate("/user");
     });
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   return (
