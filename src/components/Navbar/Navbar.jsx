@@ -18,8 +18,8 @@ import { authSelector, clearUser } from "../../store/authSlice";
 import { useDispatch, useSelector } from "react-redux";
 import { signOut } from "firebase/auth";
 import { auth } from "../../firebase/firebase";
-
-const drawerWidth = 240;
+import { DRAWER_WIDTH } from "../../constants/constants";
+import PropTypes from 'prop-types';
 
 export default function Navbar(props) {
   const userAuth = useSelector(authSelector);
@@ -196,7 +196,7 @@ export default function Navbar(props) {
             display: { xs: "block", sm: "none" },
             "& .MuiDrawer-paper": {
               boxSizing: "border-box",
-              width: drawerWidth,
+              width: DRAWER_WIDTH,
             },
           }}
         >
@@ -205,4 +205,8 @@ export default function Navbar(props) {
       </Box>
     </Box>
   );
+}
+
+Navbar.propTypes = {
+  window: PropTypes.oneOfType([PropTypes.object, PropTypes.oneOf([undefined])]),
 }

@@ -9,6 +9,7 @@ import {
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
 import { Suspense } from "react";
+import PropTypes from 'prop-types';
 
 const style = {
   position: "absolute",
@@ -119,4 +120,13 @@ export default function ExpenseReport({
       </Container>
     </Modal>
   );
+}
+
+ExpenseReport.propTypes = {
+    open: PropTypes.bool.isRequired,
+    report: PropTypes.array.isRequired,
+    setModal: PropTypes.func.isRequired,
+    resetReport: PropTypes.func.isRequired,
+    expenseDetails: PropTypes.object.isRequired,
+    imageSrc: PropTypes.oneOfType([PropTypes.string, PropTypes.oneOf([null])]),
 }

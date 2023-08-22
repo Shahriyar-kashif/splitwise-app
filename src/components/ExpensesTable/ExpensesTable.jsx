@@ -17,6 +17,7 @@ import { settleDebt } from "../../Utilities/expenseSettlementUtil";
 import { fetchExpenseList } from "../../Utilities/firebaseUtilities";
 import { useSelector } from "react-redux";
 import { authSelector } from "../../store/authSlice";
+import { toast } from "react-toastify";
 
 export default function ExpensesTable() {
   const [report, setReport] = useState([]);
@@ -35,8 +36,10 @@ export default function ExpensesTable() {
         setIsLoading(false);
       })
       .catch((error) => {
+        toast.error(error.message)
         setIsLoading(false);
       });
+        // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
   const getImageUrl = (imagePath) => {
