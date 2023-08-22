@@ -1,4 +1,3 @@
-import { doc, getDoc } from "@firebase/firestore";
 import {
   Table,
   TableBody,
@@ -9,19 +8,37 @@ import {
   Button,
   Box,
 } from "@mui/material";
-import { db, storage } from "../../firebase/firebase";
-import { useLoaderData } from "react-router";
-import { useState } from "react";
+import { storage } from "../../firebase/firebase";
+import { useEffect, useState } from "react";
 import ExpenseReport from "../ExpenseReport/ExpenseReport";
 import { getDownloadURL, ref } from "@firebase/storage";
-import { settleDebt } from "../../Utilities/ExpenseSettlementUtil";
+import { settleDebt } from "../../Utilities/expenseSettlementUtil";
+import { fetchExpenseList } from "../../Utilities/firebaseUtilities";
+import SkeletonUI from "../SkeletonUI/SkeletonUI";
+import { useSelector } from "react-redux";
+import { authSelector } from "../../store/authSlice";
 
 export default function ExpensesTable() {
   const [report, setReport] = useState([]);
   const [openModal, setOpenModal] = useState(false);
   const [expenseDetails, setExpenseDetails] = useState([]);
   const [imageUrl, setImageUrl] = useState(null);
-  const expenseList = useLoaderData();
+  const [isLoading, setIsLoading] = useState(true);
+  const [expenseList, setExpenseList] = useState([]);
+  const userAuth = useSelector(authSelector);
+
+  useEffect(() => {
+    if (!userAuth) return;
+    fetchExpenseList(userAuth)
+      .then((expenseList) => {
+        setExpenseList([...expenseList]);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error.message);
+        setIsLoading(false);
+      });
+  }, []);
 
   const getImageUrl = (imagePath) => {
     if (imagePath) {
@@ -59,6 +76,13 @@ export default function ExpensesTable() {
             </TableRow>
           </TableHead>
           <TableBody>
+            {isLoading &&
+            <TableRow>
+                <TableCell><SkeletonUI /></TableCell>
+                <TableCell><SkeletonUI /></TableCell>
+                <TableCell><SkeletonUI /></TableCell>
+                <TableCell><SkeletonUI /></TableCell>
+            </TableRow>}
             {expenseList.map((expense, i) => {
               return (
                 <TableRow
@@ -93,25 +117,4 @@ export default function ExpensesTable() {
       )}
     </Box>
   );
-}
-
-export async function loader({ params }) {
-  const docRef = doc(db, "users-db", params.userId);
-  const docSnap = await getDoc(docRef);
-  if (docSnap.exists()) {
-    const userData = docSnap.data();
-    const expenseIds = userData.expenses || [];
-    const listOfPromises = expenseIds.map(async (expenseId) => {
-      const expenseRef = doc(db, "expense", expenseId);
-      const expenseSnap = await getDoc(expenseRef);
-      if (expenseSnap.exists()) {
-        const expenseData = expenseSnap.data();
-        return expenseData;
-      }
-    });
-    const listOfExpenses = await Promise.all(listOfPromises);
-    return listOfExpenses;
-  } else {
-    return [];
-  }
 }

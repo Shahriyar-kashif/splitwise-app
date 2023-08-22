@@ -14,64 +14,62 @@ import { Provider } from "react-redux";
 import { store } from "./store/store";
 import Dashboard from "./routes/Dashboard/Dashboard";
 import AddExpense from "./routes/AddExpense/AddExpense";
-import { loader } from "./components/UserProfile/UserProfile";
-import { loader as contributorsLoader } from "./components/AddContributers/AddContributers";
-import { loader as expenseListLoader } from "./components/ExpensesTable/ExpensesTable";
 import AllExpenses from "./routes/AllExpenses/AllExpenses";
+import App from "./App";
 
-const router = createBrowserRouter([
-  {
-    path: "/",
-    element: <Root />,
-    children: [
-      {
-        path: "/",
-        element: <Home />,
-      },
-      {
-        path: "/",
-        element: <ProtectedRoute />,
-        children: [
-          {
-            path: "/user/:userId",
-            element: <User />,
-            children: [
-              {
-                path: "/user/:userId",
-                element: <Dashboard />,
-                loader: loader,
-              },
-              {
-                path: "add-expense",
-                element: <AddExpense />,
-                loader: contributorsLoader,
-              },
-              {
-                path: "all-expenses",
-                element: <AllExpenses />,
-                loader: expenseListLoader,
-              },
-            ],
-          },
-        ],
-      },
-      {
-        path: "/login",
-        element: <Signin />,
-      },
-      {
-        path: "/signup",
-        element: <Signup />,
-      },
-    ],
-  },
-]);
+// const router = createBrowserRouter([
+//   {
+//     path: "/",
+//     element: <Root />,
+//     children: [
+//       {
+//         path: "/",
+//         element: <Home />,
+//       },
+//       {
+//         path: "/",
+//         element: <ProtectedRoute />,
+//         children: [
+//           {
+//             path: "/user",
+//             element: <User />,
+//             children: [
+//               {
+//                 path: "/user",
+//                 element: <Dashboard />,
+//               },
+//               {
+//                 path: "add-expense",
+//                 element: <AddExpense />,
+//               },
+//               {
+//                 path: "all-expenses",
+//                 element: <AllExpenses />,
+//               },
+//               {
+//                 path:"*",
+//                 element: <Dashboard />,
+//               }
+//             ],
+//           },
+//         ],
+//       },
+//       {
+//         path: "/login",
+//         element: <Signin />,
+//       },
+//       {
+//         path: "/signup",
+//         element: <Signup />,
+//       },
+//     ],
+//   },
+// ]);
+
 ReactDOM.createRoot(document.getElementById("root")).render(
   // <React.StrictMode>
-    <Provider store={store}>
-      <ThemeProvider theme={theme}>
-        <RouterProvider router={router} />
-      </ThemeProvider>
-    </Provider>
+  <Provider store={store}>
+      <App />
+  </Provider>
   // </React.StrictMode>
 );

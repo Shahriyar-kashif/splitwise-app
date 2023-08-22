@@ -36,6 +36,7 @@ export const settleDebt = (payees, payers, transaction, currency = null, id = nu
 
     if (debt < credit) {
       payeesCopy[maxCreditInd].contribution -= debt;
+      console.log(payersCopy[maxDebtInd])
       const newTransaction = {
         currency: currency,
         expenseId: id,
@@ -51,14 +52,14 @@ export const settleDebt = (payees, payers, transaction, currency = null, id = nu
     }
 
     if (debt > credit) {
-      payersCopy[maxDebtInd].contribution += debt;
+      payersCopy[maxDebtInd].contribution += credit;
       const newTransaction = {
         currency: currency,
         expenseId: id,
         payerId: payersCopy[maxDebtInd].id,
         payerName: payersCopy[maxDebtInd]?.name,
         payeeName: payeesCopy[maxCreditInd]?.name,
-        debt: debt,
+        debt: credit,
         payeeId: payeesCopy[maxCreditInd].id,
       };
       transaction.push(newTransaction);

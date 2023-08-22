@@ -1,3 +1,4 @@
+import SkeletonUI from "../SkeletonUI/SkeletonUI";
 import {
   Box,
   Select,
@@ -10,15 +11,18 @@ import {
   MenuItem,
   Typography,
 } from "@mui/material";
-import { collection, doc, getDoc, getDocs, query, where } from "@firebase/firestore";
-import { useLoaderData } from "react-router";
-import { useState, useRef } from "react";
+import { collection, getDocs, query, where } from "@firebase/firestore";
+import { useState, useRef, useEffect } from "react";
 import { db } from "../../firebase/firebase";
 import { useDispatch, useSelector } from "react-redux";
 import {
   addParticipants,
   participantsSelector,
 } from "../../store/participantsSlice";
+import { fetchUserData, fetchUsers } from "../../Utilities/firebaseUtilities";
+import { toast } from "react-toastify";
+import { authSelector } from "../../store/authSlice";
+import { isExpenseValid, isParticipantAlreadyAdded } from "../../Utilities/participantsValidationsUtils";
 
 const ITEM_HEIGHT = 48;
 const ITEM_PADDING_TOP = 8;
@@ -50,11 +54,13 @@ export default function AddContributers({
   userBill,
   userContribution,
 }) {
-  const [, users] = useLoaderData();
   const [email, setEmail] = useState("");
   const [errorMessage, setErrorMessage] = useState(false);
   const [currentParticipant, setCurrentParticipant] = useState(null);
   const [amountError, setAmountError] = useState("");
+  const [negativeValError, setNegativeValError] = useState(false);
+  const [users, setUsers] = useState([]);
+  const [isLoading, setIsLoading] = useState(true);
   const contributionRef = useRef();
   const billRef = useRef();
   const contributorRef = useRef();
@@ -62,54 +68,22 @@ export default function AddContributers({
   const participants = useSelector(participantsSelector);
   const signedInUserBill = Number(userBill) || 0;
   const signedInUserContribution = Number(userContribution) || 0;
+  const userAuth = useSelector(authSelector);
 
-  const handleChange = (event) => {
-    setEmail(event.target.value);
-  };
-
-  const checkParticipantRepetition = (participants, email) => {
-    const repeatedParticipant = participants.find(
-      (participant) => participant.email === email
-    );
-    return repeatedParticipant;
-  };
-
-  const compareBillAndContribution = (
-    participants,
-    participantBill,
-    participantContribution
-  ) => {
-    const participantPayment = compareAmount(participants) || {
-      bill: 0,
-      contribution: 0,
-    };
-
-    return (
-      participantPayment.bill + participantBill + signedInUserBill >
-        totalBill ||
-      participantPayment.contribution +
-        participantContribution +
-        signedInUserContribution >
-        totalBill ||
-      participantContribution > totalBill ||
-      participantBill > totalBill
-    );
-  };
-
-  const compareAmount = (participants) => {
-    if (participants.length > 0) {
-      const totalBill = participants.reduce((accum, current) => {
-        return {
-          bill: Number(accum.bill) + Number(current.bill),
-          contribution:
-            Number(accum.contribution) + Number(current.contribution),
-        };
+  useEffect(() => {
+    fetchUsers(userAuth)
+      .then((users) => {
+        setUsers([...users]);
+        setIsLoading(false);
+      })
+      .catch((error) => {
+        console.log(error);
+        setIsLoading(false);
       });
-      return {
-        bill: totalBill.bill,
-        contribution: totalBill.contribution,
-      };
-    }
+  }, []);
+
+  const handleEmailChange = (event) => {
+    setEmail(event.target.value);
   };
 
   const handleParticipants = async () => {
@@ -118,19 +92,34 @@ export default function AddContributers({
       Number(billRef.current.value),
       Number(contributionRef.current.value),
     ];
+
     const usersRef = collection(db, "users-db");
     const matchedUser = query(usersRef, where("email", "==", userEmail));
     const userSnapShot = await getDocs(matchedUser);
 
-    if (checkParticipantRepetition(participants, userEmail)) {
+    if (isParticipantAlreadyAdded(participants, userEmail)) {
       setErrorMessage(true);
       return;
     } else setErrorMessage(false);
 
-    if (compareBillAndContribution(participants, userBill, userContribution)) {
+    if (
+      isExpenseValid(
+        participants,
+        userBill,
+        userContribution,
+        signedInUserBill,
+        signedInUserContribution,
+        totalBill
+      )
+    ) {
       setAmountError(true);
       return;
     } else setAmountError(false);
+
+    if (userBill < 0 || userContribution < 0) {
+      setNegativeValError(true);
+      return;
+    } else setNegativeValError(false);
 
     if (!userSnapShot.empty) {
       const userDoc = userSnapShot.docs[0];
@@ -143,6 +132,7 @@ export default function AddContributers({
       };
       dispatch(addParticipants(participantExpense));
       setCurrentParticipant(userEmail);
+      toast.success("Contributor added successfully!");
     }
   };
 
@@ -166,9 +156,14 @@ export default function AddContributers({
               name="contributors"
               value={email}
               MenuProps={MenuProps}
-              onChange={handleChange}
+              onChange={handleEmailChange}
               sx={{ width: "100%" }}
             >
+              {isLoading && (
+                <MenuItem>
+                  <SkeletonUI />
+                </MenuItem>
+              )}
               {users.map((user) => {
                 return (
                   <MenuItem key={user.email} value={user.email}>
@@ -183,7 +178,7 @@ export default function AddContributers({
               fullWidth
               inputRef={billRef}
               id="bill"
-              label="bill"
+              label="Add order bill of the contributor"
               type="number"
               name="bill"
               autoComplete="current-bill"
@@ -194,7 +189,7 @@ export default function AddContributers({
               fullWidth
               id="contribution"
               inputRef={contributionRef}
-              label="contribution"
+              label="Add amount paid by the contributor"
               type="number"
               name="contribution"
               autoComplete="current-contribution"
@@ -217,18 +212,23 @@ export default function AddContributers({
               Close
             </Button>
             {currentParticipant && (
-              <Typography component="p" sx={{ color: "green" }}>
+              <Typography component="p" sx={{ color: "green" }} align="center">
                 {currentParticipant} added successfully!
               </Typography>
             )}
             {errorMessage && (
-              <Typography component="p" sx={{ color: "red" }}>
+              <Typography component="p" sx={{ color: "red" }} align="center">
                 {currentParticipant} has already been added!
               </Typography>
             )}
             {amountError && (
-              <Typography component="p" sx={{ color: "red" }}>
+              <Typography component="p" sx={{ color: "red" }} align="center">
                 Contribution or bill cannot exceed total bill
+              </Typography>
+            )}
+            {negativeValError && (
+              <Typography component="p" sx={{ color: "red" }} align="center">
+                Negative values are not acceptable
               </Typography>
             )}
           </Box>
@@ -236,21 +236,4 @@ export default function AddContributers({
       </Container>
     </Modal>
   );
-}
-
-export async function loader({ params }) {
-  const usersSnapshot = await getDocs(collection(db, "users-db"));
-  const users = [];
-//   usersSnapshot.forEach((doc) => users.push(doc.data()));
-//   return users;
-  const userId = params.userId;
-  const userRef = doc(db, "users-db", userId);
-  const userSnap = await getDoc(userRef);
-  if (userSnap.exists()) {
-    const userData = userSnap.data();
-    usersSnapshot.forEach((doc) => users.push(doc.data()));
-    return [userData, users];
-  } else {
-    return [null, []];
-  }
 }

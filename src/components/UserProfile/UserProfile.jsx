@@ -1,54 +1,102 @@
-import { useSelector } from "react-redux";
-import {
-  UNSAFE_useRouteId,
-  redirect,
-  useLoaderData,
-  useNavigate,
-  useParams,
-} from "react-router";
-import { authSelector } from "../../store/authSlice";
+import { useNavigate } from "react-router";
 import {
   Box,
   Button,
+  Divider,
   List,
   ListItem,
   ListItemText,
+  Paper,
+  Skeleton,
   Typography,
 } from "@mui/material";
-import { arrayUnion, doc, getDoc, updateDoc } from "@firebase/firestore";
+import { doc, getDoc, updateDoc } from "@firebase/firestore";
 import { auth, db } from "../../firebase/firebase";
 import { onAuthStateChanged } from "@firebase/auth";
 import { useEffect, useState } from "react";
-import { settleDebt } from "../../Utilities/ExpenseSettlementUtil";
+import { settleDebt } from "../../Utilities/expenseSettlementUtil";
+import {
+  fetchExpenseList,
+  fetchUserData,
+} from "../../Utilities/firebaseUtilities";
+import { toast } from "react-toastify";
+import { useSelector } from "react-redux";
+import { authSelector } from "../../store/authSlice";
+
 export default function UserProfile() {
-  const [userData, listOfExpenses] = useLoaderData();
+  const [userData, setUserData] = useState(null);
   const [settlementRecord, setSettlementRecord] = useState([]);
+  console.log(auth.currentUser);
   const userOwes = settlementRecord.filter(
     (user) => user.payerName === `${userData.firstName} ${userData.lastName}`
   );
+  const userOwesExactlyOne = userOwes.filter((user, i, arr) => {
+    return (
+      arr.filter((record) => record.expenseId === user.expenseId).length < 2
+    );
+  });
+  console.log(userOwesExactlyOne);
+  const userOwesMultipleInOneExpense = userOwes.filter((user, i, arr) => {
+    return (
+      arr.filter((record) => record.expenseId === user.expenseId).length > 1
+    );
+  });
+  console.log(userOwesMultipleInOneExpense);
   const userIsOwed = settlementRecord.filter(
     (user) => user.payeeName === `${userData.firstName} ${userData.lastName}`
   );
   const navigate = useNavigate();
-  const path = useParams();
+  const userAuth = useSelector(authSelector);
   useEffect(() => {
-    if (!userData) {
-      onAuthStateChanged(auth, (user) => {
-        navigate(`/user/${user.uid}`);
+    if (!userAuth) return;
+    fetchExpenseList(userAuth).then((listOfExpenses) => {
+      listOfExpenses.forEach((expense) => {
+        const transaction = [];
+        const payers = expense.participants.filter(
+          (user) => user.bill > user.contribution
+        );
+        const payees = expense.participants.filter(
+          (user) => user.bill < user.contribution
+        );
+        settleDebt(payees, payers, transaction, expense.currency, expense.id);
+        setSettlementRecord((prevState) => [...prevState, ...transaction]);
       });
-    }
-    listOfExpenses.forEach((expense) => {
-      const transaction = [];
-      const payers = expense.participants.filter(
-        (user) => user.bill > user.contribution
-      );
-      const payees = expense.participants.filter(
-        (user) => user.bill < user.contribution
-      );
-      settleDebt(payees, payers, transaction, expense.currency, expense.id);
-      setSettlementRecord((prevState) => [...prevState, ...transaction]);
     });
-  }, []);
+    fetchUserData(userAuth).then((userData) => {
+      setUserData(userData);
+    });
+  }, [userAuth]);
+
+  const handleMultipleSettlement = async (expenseId) => {
+    const recordsToBeSettled = settlementRecord.filter(
+      (record) => record.expenseId === expenseId
+    );
+    console.log(recordsToBeSettled);
+    const userId = recordsToBeSettled[0].payerId;
+    const payerRef = doc(db, "users-db", userId);
+    const payerSnap = await getDoc(payerRef);
+    const updatedPayerExpense = payerSnap
+      .data()
+      .expenses.filter((id) => id !== expenseId);
+    await updateDoc(payerRef, {
+      expenses: updatedPayerExpense,
+    });
+    recordsToBeSettled.forEach(async (record) => {
+      const payeeRef = doc(db, "users-db", record.payeeId);
+      const payeeSnap = await getDoc(payeeRef);
+      const updatedPayeeExpense = payeeSnap
+        .data()
+        .expenses.filter((id) => id !== expenseId);
+      await updateDoc(payeeRef, {
+        expenses: updatedPayeeExpense,
+      });
+    });
+    const updatedRecord = settlementRecord.filter(
+      (record) => record.expenseId !== expenseId
+    );
+    setSettlementRecord([...updatedRecord]);
+  };
+
   const settleExpense = async (expenseId, userId, payeeId) => {
     const debtsPerExpense = settlementRecord.filter(
       (record) => record.expenseId === expenseId && record.payerId === userId
@@ -72,7 +120,6 @@ export default function UserProfile() {
       );
       const updatedRecord = settlementRecord.slice();
       updatedRecord.splice(recordToBeSettled, 1);
-      setSettlementRecord([...updatedRecord]);
       const payerRef = doc(db, "users-db", userId);
       const payeeRef = doc(db, "users-db", payeeId);
       const payerSnap = await getDoc(payerRef);
@@ -89,79 +136,100 @@ export default function UserProfile() {
       await updateDoc(payeeRef, {
         expenses: updatedPayeeExpense,
       });
+      setSettlementRecord([...updatedRecord]);
     }
+    toast.success("Debt settled succesfully!");
   };
 
   return (
-    <Box sx={{ width: 2 / 4, ml: "5%", mt: 5 }}>
-      {userData && (
-        <Typography component="h1" variant="h5" sx={{ mb: 2 }}>
-          Welcome, {userData.firstName} {userData.lastName}
-        </Typography>
-      )}
-      <Typography component="h2" variant="h5">
-        Your outstanding debts
+    <Box sx={{ mx: "5%", mt: 5 }}>
+      <Typography align="center" component="h1" variant="h5" sx={{ mb: 10 }}>
+        Welcome, {auth.currentUser?.displayName}
       </Typography>
-
-      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-        {userOwes.map((user) => {
-          return (
-            <ListItem
-              secondaryAction={
-                <Button
-                  variant="contained"
-                  onClick={() =>
-                    settleExpense(user.expenseId, user.payerId, user.payeeId)
-                  }
-                >
-                  Settle
-                </Button>
-              }
-            >
-              <ListItemText
-                primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List>
-      <Typography component="h2" variant="h5">
-        Debts owed to you
-      </Typography>
-      <List sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}>
-        {userIsOwed.map((user) => {
-          return (
-            <ListItem>
-              <ListItemText
-                primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
-              />
-            </ListItem>
-          );
-        })}
-      </List>
+      <Paper
+        elevation={3}
+        sx={{
+          display: "flex",
+          justifyContent: "center",
+          width: "60%",
+          mx: "auto",
+        }}
+      >
+        <List
+          sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}
+        >
+          <Typography
+            align="center"
+            color="text.secondary"
+            component="h2"
+            variant="h6"
+          >
+            Your outstanding debts
+          </Typography>
+          {userOwesExactlyOne.map((user) => {
+            return (
+              <ListItem
+                secondaryAction={
+                  <Button
+                    onClick={() =>
+                      settleExpense(user.expenseId, user.payerId, user.payeeId)
+                    }
+                  >
+                    Settle
+                  </Button>
+                }
+              >
+                <ListItemText
+                  primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
+                />
+              </ListItem>
+            );
+          })}
+          {userOwesMultipleInOneExpense &&
+            userOwesMultipleInOneExpense.map((user, i, arr) => {
+              return (
+                <ListItem>
+                  <ListItemText
+                    primary={`You owe ${user.debt} ${user?.currency} to ${user.payeeName}`}
+                    sx={{ display: "inline" }}
+                  />
+                  {((arr.length - 1 === i) || (user.expenseId !== arr[i+1].expenseId )) && (
+                    <Button
+                      onClick={() => {
+                        handleMultipleSettlement(user.expenseId);
+                      }}
+                    >
+                      Settle
+                    </Button>
+                  )}
+                </ListItem>
+              );
+            })}
+        </List>
+        <Divider orientation="vertical" flexItem />
+        <List
+          sx={{ width: "100%", maxWidth: 500, bgcolor: "background.paper" }}
+        >
+          <Typography
+            align="center"
+            color="text.secondary"
+            component="h2"
+            variant="h6"
+          >
+            Debts owed to you
+          </Typography>
+          {userIsOwed.map((user) => {
+            return (
+              <ListItem alignItems="center">
+                <ListItemText
+                  align="center"
+                  primary={`${user.payerName} owes you ${user.debt} ${user?.currency}`}
+                />
+              </ListItem>
+            );
+          })}
+        </List>
+      </Paper>
     </Box>
   );
-}
-
-export async function loader({ params }) {
-  const userId = params.userId;
-  const userRef = doc(db, "users-db", userId);
-  const userSnap = await getDoc(userRef);
-  if (userSnap.exists()) {
-    const userData = userSnap.data();
-    const expenseIds = userData.expenses || [];
-    const listOfPromises = expenseIds.map(async (expenseId) => {
-      const expenseRef = doc(db, "expense", expenseId);
-      const expenseSnap = await getDoc(expenseRef);
-      if (expenseSnap.exists()) {
-        const expenseData = expenseSnap.data();
-        return expenseData;
-      }
-    });
-    if (expenseIds.length === 0) return [userData, listOfPromises];
-    const listOfExpenses = await Promise.all(listOfPromises);
-    return [userData, listOfExpenses];
-  } else {
-    return [userSnap.data(), []];
-  }
 }
