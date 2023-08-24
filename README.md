@@ -54,7 +54,7 @@ Follow these steps to set up your development environment:
 ## Running the App
 To run the app locally, use the following command:
 ```
-    npm install
+    npm run dev
 ```
 
 ## Creating a Build for Production
